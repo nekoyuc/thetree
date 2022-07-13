@@ -162,7 +162,7 @@ def isPointInside(point, obj):
     else:
         return False
 
-# fill holes of selected objects
+# Fill holes of selected objects
 def fillOpen(obj):
     objectMode()
     dAllObject()
