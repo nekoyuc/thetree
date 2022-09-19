@@ -44,6 +44,8 @@ running = True
 down_color = (99,247,143)
 up_color = (99,143,247)
 selected_color = (247,95,30)
+particle_color = ((219,142,61),(219,217,94),(219,83,101) ,(88,186,219),(138,72,219))
+line_color = ((105,143,63),(156,219,86),(34,143,111),(64,219,174))
 
 UP = 1
 DOWN = 0
@@ -53,13 +55,13 @@ particles = []
 currently_selected = [1,1]
 pause = 1
 
+delta_velocity = {}
+
 #image = Image.open(sys.argv[1]).resize((SCREEN_WIDTH, SCREEN_HEIGHT))
 image = Image.open("d:/work/the tree/scripts/vectorio/test_image.jpg").resize((SCREEN_WIDTH, SCREEN_HEIGHT))
 image = np.array(image)
 
-
-
-
+stickiness_range = 30
 
 ### LOGIC
 ### ----------
@@ -69,13 +71,15 @@ class Particle():
         self.center = center
         self.history = []
         self.velocity = (0,0)
-        self.decay = 0.98
+        self.decay = 1
+        self.particle_color = particle_color
+        self.line_color = random.choice(line_color)
 
     def draw(self, screen):
         random_color = (math.floor(random.random() * 255), math.floor(random.random() * 255), math.floor(random.random() * 255))
         for i in range(len(self.history)-1):
-            pygame.draw.line(screen, (0,0,0), self.history[i], self.history[i+1], 2)
-        pygame.draw.circle(screen,random_color,self.center, 5)
+            pygame.draw.line(screen, self.line_color, self.history[i], self.history[i+1], 2)
+        pygame.draw.circle(screen,random.choice(particle_color),self.center, 4)
 
     def accelerate(self, acceleration = 1):
         self.velocity = (self.velocity[0]*acceleration, self.velocity[1]*acceleration)
@@ -88,7 +92,7 @@ class Particle():
         self.history.append(self.center)
 
     def is_moving(self):
-        if len(self.history) > 1000 or (self.velocity[0] <0.01 and self.velocity[1] >0.02):
+        if len(self.history) > 500:
             return False
         return True
 
@@ -217,8 +221,11 @@ def handle_event(event):
         pos = pygame.mouse.get_pos()
         for i in range(3):
             r = random.random()-0.5
-            particle_pos = (pos[0]+r,pos[1]+r)
+            s = random.random()-0.5
+            t = 0.05*(random.random()-0.5)
+            particle_pos = (pos[0]+r,pos[1]+s)
             particles.append(Particle(particle_pos))
+            particles[-1].velocity = (t,0)
 
 #mouse scroll up
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
@@ -238,26 +245,53 @@ def handle_event(event):
 #    return (0,0.01)
 
 #-----velocity vector fields------
-def evaluate_grid_vector_field(pos):
-    cx = math.floor(pos[0]/CELL_WIDTH)
-    cy = math.floor(pos[1]/CELL_HEIGHT)
-    if cx >= GRID_X or cy >= GRID_Y:
-        return (0,1)
-    elif cx < 0 or cy < 0:
-        return (0,-1)
-    else:
-        return field_grid[cy][cx].a_value
-    pass
+def evaluate_grid_vector_field(particles):
+    for i in range(len(particles)):
+        cx = math.floor(particles[i].center[0]/CELL_WIDTH)
+        cy = math.floor(particles[i].center[1]/CELL_HEIGHT)
+        if cx >= GRID_X or cy >= GRID_Y:
+            delta_v = (0,1)
+        elif cx < 0 or cy < 0:
+            delta_v = (0,-1)
+        else:
+            delta_v = field_grid[cy][cx].a_value
+        if i in delta_velocity.keys():
+            delta_velocity[i] = (delta_velocity[i][0] + delta_v[0], delta_velocity[i][1] + delta_v[1])
+        else:
+            delta_velocity[i] = delta_v
 
-def evaluate_image_vector_field(pos):
+def evaluate_image_vector_field(particles):
     energy = 3 - ((image[min(int(pos[1]),image.shape[1]-1)][min(int(pos[0]),image.shape[0]-1)])/255.0).sum()
     return (0, (-energy) / 50) # Divided by 50 to make it slower
 
-def evaluate_random_vector_field(pos):
-    return ((random.random()-.5)/500,0)
+def evaluate_random_vector_field(particles):
+    for i in range(len(particles)):
+        delta_v = ((random.random()-.5)/500,0)
+        if i in delta_velocity.keys():
+            delta_velocity[i] = (delta_velocity[i][0] + delta_v[0], delta_velocity[i][1] + delta_v[1])
+        else:
+            delta_velocity[i] = delta_v
+
+def evaluate_stickiness_vector_field(particles):
+    for i in range(len(particles)):
+        delta_v = (0,0)
+        for j in range(len(particles)):
+            if j == i:
+                continue
+            pi = strength(particles[i].velocity)
+            delta_p = strength((particles[j].center[0]-particles[i].center[0], particles[j].center[1]-particles[i].center[1]))
+            if pi > 0.1 or delta_p > stickiness_range:
+                continue
+            delta_p_norm = ((particles[j].center[0]-particles[i].center[0])/delta_p, (particles[j].center[1]-particles[i].center[1])/delta_p)
+            intensity = 0.0001*(stickiness_range-delta_p)
+            delta_v = (delta_v[0]+delta_p_norm[0]*intensity, delta_v[1]+delta_p_norm[1]*intensity)
+        if i in delta_velocity.keys():
+            delta_velocity[i] = (delta_velocity[i][0] + delta_v[0], delta_velocity[i][1] + delta_v[1])
+        else:
+            delta_velocity[i] = delta_v
 
 acceleration_vector_fields = []
-velocity_vector_fields = [ evaluate_grid_vector_field, evaluate_random_vector_field]
+velocity_vector_fields = [ evaluate_grid_vector_field]
 #------velocity vector fields------
 
 while running:
@@ -270,9 +304,14 @@ while running:
     # Fill the background with white
     screen.fill((255, 255, 255))
 
+    evaluate_grid_vector_field(particles)
+    #evaluate_random_vector_field(particles)
+    evaluate_stickiness_vector_field(particles)
+
     # Update particles
     dead_particles = []
-    for p in particles:
+    for i in range(len(particles)):
+        p = particles[i]
         if not p.is_moving(): continue
         if not p.is_alive(): continue
         a = 1
@@ -280,8 +319,8 @@ while running:
             a *= vector_field(p.center)
         p.accelerate(acceleration = a)
 
-        for delta_v in velocity_vector_fields:
-            p.velocity = ((p.velocity[0]+delta_v(p.center)[0])*p.decay, (p.velocity[1]+delta_v(p.center)[1])*p.decay)
+        #velocity vector fields
+        p.velocity = (p.velocity[0]*p.decay+delta_velocity[i][0], p.velocity[1]*p.decay+delta_velocity[i][1])
         p.perturb(50)
 
         p.update_history()
@@ -290,6 +329,8 @@ while running:
             dead_particles.append(p)
 
         p.decay = p.decay**1.001
+
+    delta_velocity = {}
     for p in dead_particles:
         particles.remove(p)
 
