@@ -41,27 +41,45 @@ running = True
 ### STATE
 ### ----------
 
+#---colors---
 down_color = (99,247,143)
 up_color = (99,143,247)
 selected_color = (247,95,30)
 particle_color = ((219,142,61),(219,217,94),(219,83,101) ,(88,186,219),(138,72,219))
 line_color = ((105,143,63),(156,219,86),(34,143,111),(64,219,174))
 
+#---
 UP = 1
 DOWN = 0
 
-field_grid = []
-particles = []
-currently_selected = [1,1]
+#---inventories
+FieldGrid = []
+Particles = []
 pause = 1
+DeltaVelocity = {}
 
-delta_velocity = {}
+#---parameters
+currently_selected = [1,1]
+start_velocity = (0,0)
+start_decay = 0.98
+start_acceleration = 1
+history_length = 500
+start_field_value = (0,0.001)
+arrow_scale = 2400
+arrow_darkness = 10000
+stickiness_range = 40
+stickiness_factor = 0.0001
+perturb_coefficient = 30
+
+#---toggles
+field_toggle = True
+stickiness_toggle = True
+randomness_toggle = False
+image_toggle = False
 
 #image = Image.open(sys.argv[1]).resize((SCREEN_WIDTH, SCREEN_HEIGHT))
 image = Image.open("d:/work/the tree/scripts/vectorio/test_image.jpg").resize((SCREEN_WIDTH, SCREEN_HEIGHT))
 image = np.array(image)
-
-stickiness_range = 30
 
 ### LOGIC
 ### ----------
@@ -70,18 +88,17 @@ class Particle():
     def __init__(self, center):
         self.center = center
         self.history = []
-        self.velocity = (0,0)
-        self.decay = 1
+        self.velocity = start_velocity
+        self.decay = start_decay
         self.particle_color = particle_color
         self.line_color = random.choice(line_color)
 
     def draw(self, screen):
-        random_color = (math.floor(random.random() * 255), math.floor(random.random() * 255), math.floor(random.random() * 255))
         for i in range(len(self.history)-1):
             pygame.draw.line(screen, self.line_color, self.history[i], self.history[i+1], 2)
         pygame.draw.circle(screen,random.choice(particle_color),self.center, 4)
 
-    def accelerate(self, acceleration = 1):
+    def accelerate(self, acceleration = start_acceleration):
         self.velocity = (self.velocity[0]*acceleration, self.velocity[1]*acceleration)
         #self.perturb()
 
@@ -92,7 +109,7 @@ class Particle():
         self.history.append(self.center)
 
     def is_moving(self):
-        if len(self.history) > 500:
+        if len(self.history) > history_length or (abs(self.velocity[0])<0.001 and self.velocity[1]>0.07):
             return False
         return True
 
@@ -110,7 +127,7 @@ class FieldVizCircles():
         self.center = center
         self.radius = radius
         self.state = DOWN
-        self.a_value = (0, 0.001)
+        self.a_value = start_field_value
 
     def get_color(self, is_selected):
         if is_selected:
@@ -131,18 +148,14 @@ class FieldVizCircles():
     def draw_arrow(self):
         start_point = self.center
         value_strength = strength(self.a_value)
-        if value_strength != 0:
-            end_point_normal = (self.a_value[0]*300, self.a_value[1]*300)
-            #end_point_normal = (self.a_value[0]/value_strength, self.a_value[1]/value_strength)
-        else:
-            end_point_normal = (0,0)
-        end_point = tuple(end_point_normal[i] * min(CELL_WIDTH, CELL_HEIGHT)/2.5 + self.center[i] for i in range(2))
+        end_point = (self.center[0] + self.a_value[0]*arrow_scale, self.center[1] + self.a_value[1]*arrow_scale)
+
         global max_strength
         if value_strength > max_strength:
             max_strength = value_strength
             print(value_strength)
-        pygame.draw.lines(screen, (255 - min(255, value_strength * 10000), 0, 255 - min(255, value_strength * 10000)),
-                          0, [start_point, end_point], math.ceil(value_strength*20))
+        pygame.draw.line(screen, (155 - min(155, math.ceil(0.608*value_strength * arrow_darkness)), 0, 255 - min(255, value_strength * arrow_darkness)),
+                          start_point, end_point, math.ceil(value_strength*100))
 
     def draw(self, screen, is_selected):
         if is_selected:
@@ -156,7 +169,7 @@ class FieldVizCircles():
 def strength(vector):
    return math.sqrt(vector[0]**2 + vector[1]**2)
 
-#create field field_grid
+#create field FieldGrid
 for gy in range(GRID_Y):
     cy = CELL_WIDTH*(1/2 + gy)
     row = []
@@ -165,7 +178,7 @@ for gy in range(GRID_Y):
         center = (cx, cy)
         radius = 3
         row.append(FieldVizCircles(center, radius))
-    field_grid.append(row)
+    FieldGrid.append(row)
 
 
 def handle_event(event):
@@ -184,7 +197,7 @@ def handle_event(event):
         if event.key == pygame.K_UP:
             currently_selected[1] = max(0, currently_selected[1]-1)
         if event.key == pygame.K_RETURN:
-            field_grid[currently_selected[1]][currently_selected[0]].flip()
+            FieldGrid[currently_selected[1]][currently_selected[0]].flip()
         if event.key == pygame.K_SPACE:
             global pause
             pause = 1 - pause
@@ -199,7 +212,7 @@ def handle_event(event):
  #       for i in range(5):
  #           r = random.random()-0.5
  #           particle_pos = (pos[0]+r,pos[1]+r)
- #           particles.append(Particle(particle_pos))
+ #           Particles.append(Particle(particle_pos))
 
  #mouse drag left button
     if event.type == pygame.MOUSEMOTION and event.buttons[0] == 1:
@@ -207,14 +220,14 @@ def handle_event(event):
         cx = math.floor(pos[0]/CELL_WIDTH)
         cy = math.floor(pos[1]/CELL_HEIGHT)
         if cx >= 0 and cy >= 0 and cx < GRID_X and cy < GRID_Y:
-            field_grid[cy][cx].a_value = (field_grid[cy][cx].a_value[0] + event.rel[0]/10000, field_grid[cy][cx].a_value[1] + event.rel[1]/10000)
+            FieldGrid[cy][cx].a_value = (FieldGrid[cy][cx].a_value[0] + event.rel[0]/10000, FieldGrid[cy][cx].a_value[1] + event.rel[1]/10000)
 
  #mouse drag middle button
     if event.type == pygame.MOUSEMOTION and event.buttons[1] == 1:
         pos = event.pos
-        for p in particles:
+        for p in Particles:
             if (pos[0] - p.center[0])**2 < 400 and (pos[1] - p.center[1])**2 < 400:
-                particles.remove(p)
+                Particles.remove(p)
 
 #mouse drag right button
     if event.type == pygame.MOUSEMOTION and event.buttons[2] == 1:
@@ -224,20 +237,20 @@ def handle_event(event):
             s = random.random()-0.5
             t = 0.05*(random.random()-0.5)
             particle_pos = (pos[0]+r,pos[1]+s)
-            particles.append(Particle(particle_pos))
-            particles[-1].velocity = (t,0)
+            Particles.append(Particle(particle_pos))
+            Particles[-1].velocity = (t,0)
 
 #mouse scroll up
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
         pos = event.pos
-        for p in particles:
+        for p in Particles:
             if (pos[0] - p.center[0])**2 < CELL_WIDTH**2 and (pos[1] - p.center[1])**2 < CELL_HEIGHT**2:
                 p.velocity = (p.velocity[0]*1.5, p.velocity[1]*1.5)
 
 #mouse scroll down             
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
         pos = event.pos
-        for p in particles:
+        for p in Particles:
             if (pos[0] - p.center[0])**2 < CELL_WIDTH**2 and (pos[1] - p.center[1])**2 < CELL_HEIGHT**2:
                 p.velocity = (p.velocity[0]*0.5, p.velocity[1]*0.5)
         
@@ -245,50 +258,58 @@ def handle_event(event):
 #    return (0,0.01)
 
 #-----velocity vector fields------
-def evaluate_grid_vector_field(particles):
-    for i in range(len(particles)):
-        cx = math.floor(particles[i].center[0]/CELL_WIDTH)
-        cy = math.floor(particles[i].center[1]/CELL_HEIGHT)
+def evaluate_grid_vector_field(Particles, toggle = True):
+    if toggle == False:
+        return
+    for i in range(len(Particles)):
+        cx = math.floor(Particles[i].center[0]/CELL_WIDTH)
+        cy = math.floor(Particles[i].center[1]/CELL_HEIGHT)
         if cx >= GRID_X or cy >= GRID_Y:
             delta_v = (0,1)
         elif cx < 0 or cy < 0:
             delta_v = (0,-1)
         else:
-            delta_v = field_grid[cy][cx].a_value
-        if i in delta_velocity.keys():
-            delta_velocity[i] = (delta_velocity[i][0] + delta_v[0], delta_velocity[i][1] + delta_v[1])
+            delta_v = FieldGrid[cy][cx].a_value
+        if i in DeltaVelocity.keys():
+            DeltaVelocity[i] = (DeltaVelocity[i][0] + delta_v[0], DeltaVelocity[i][1] + delta_v[1])
         else:
-            delta_velocity[i] = delta_v
+            DeltaVelocity[i] = delta_v
 
-def evaluate_image_vector_field(particles):
+def evaluate_image_vector_field(Particles, toggle = True):
+    if toggle == False:
+        return
     energy = 3 - ((image[min(int(pos[1]),image.shape[1]-1)][min(int(pos[0]),image.shape[0]-1)])/255.0).sum()
     return (0, (-energy) / 50) # Divided by 50 to make it slower
 
-def evaluate_random_vector_field(particles):
-    for i in range(len(particles)):
+def evaluate_random_vector_field(Particles, toggle = True):
+    if toggle == False:
+        return
+    for i in range(len(Particles)):
         delta_v = ((random.random()-.5)/500,0)
-        if i in delta_velocity.keys():
-            delta_velocity[i] = (delta_velocity[i][0] + delta_v[0], delta_velocity[i][1] + delta_v[1])
+        if i in DeltaVelocity.keys():
+            DeltaVelocity[i] = (DeltaVelocity[i][0] + delta_v[0], DeltaVelocity[i][1] + delta_v[1])
         else:
-            delta_velocity[i] = delta_v
+            DeltaVelocity[i] = delta_v
 
-def evaluate_stickiness_vector_field(particles):
-    for i in range(len(particles)):
+def evaluate_stickiness_vector_field(Particles, toggle = True):
+    if toggle == False:
+        return
+    for i in range(len(Particles)):
         delta_v = (0,0)
-        for j in range(len(particles)):
+        for j in range(len(Particles)):
             if j == i:
                 continue
-            pi = strength(particles[i].velocity)
-            delta_p = strength((particles[j].center[0]-particles[i].center[0], particles[j].center[1]-particles[i].center[1]))
-            if pi > 0.1 or delta_p > stickiness_range:
+            delta_p = (Particles[i].center[0] - Particles[j].center[0], Particles[i].center[1] - Particles[j].center[1])
+            p_distance = strength(delta_p)
+            v_distance = strength((Particles[j].velocity[0] - Particles[i].velocity[0], Particles[j].velocity[1] - Particles[i].velocity[1]))
+            if v_distance > 0.1 or p_distance > stickiness_range:
                 continue
-            delta_p_norm = ((particles[j].center[0]-particles[i].center[0])/delta_p, (particles[j].center[1]-particles[i].center[1])/delta_p)
-            intensity = 0.0001*(stickiness_range-delta_p)
-            delta_v = (delta_v[0]+delta_p_norm[0]*intensity, delta_v[1]+delta_p_norm[1]*intensity)
-        if i in delta_velocity.keys():
-            delta_velocity[i] = (delta_velocity[i][0] + delta_v[0], delta_velocity[i][1] + delta_v[1])
+            intensity = stickiness_factor*(stickiness_range-p_distance**1.5)
+            delta_v = (delta_v[0]+delta_p[0]/p_distance*intensity, delta_v[1]+delta_p[1]/p_distance*intensity)
+        if i in DeltaVelocity.keys():
+            DeltaVelocity[i] = (DeltaVelocity[i][0] + delta_v[0], DeltaVelocity[i][1] + delta_v[1])
         else:
-            delta_velocity[i] = delta_v
+            DeltaVelocity[i] = delta_v
 
 acceleration_vector_fields = []
 velocity_vector_fields = [ evaluate_grid_vector_field]
@@ -303,50 +324,51 @@ while running:
 
     # Fill the background with white
     screen.fill((255, 255, 255))
+    
+    evaluate_grid_vector_field(Particles, field_toggle)
+    evaluate_image_vector_field(Particles, image_toggle)
+    evaluate_random_vector_field(Particles, randomness_toggle)
+    evaluate_stickiness_vector_field(Particles, stickiness_toggle)
 
-    evaluate_grid_vector_field(particles)
-    #evaluate_random_vector_field(particles)
-    evaluate_stickiness_vector_field(particles)
+    # Update Particles
+    DeadParticles = []
 
-    # Update particles
-    dead_particles = []
-    for i in range(len(particles)):
-        p = particles[i]
+    for i in range(len(Particles)):
+        p = Particles[i]
         if not p.is_moving(): continue
-        if not p.is_alive(): continue
+        if not p.is_alive():
+            DeadParticles.append(p)
+
         a = 1
         for vector_field in acceleration_vector_fields:
             a *= vector_field(p.center)
         p.accelerate(acceleration = a)
 
         #velocity vector fields
-        p.velocity = (p.velocity[0]*p.decay+delta_velocity[i][0], p.velocity[1]*p.decay+delta_velocity[i][1])
-        p.perturb(50)
+        p.velocity = (p.velocity[0]*p.decay+DeltaVelocity[i][0], p.velocity[1]*p.decay+DeltaVelocity[i][1])
+        p.perturb(perturb_coefficient)
 
         p.update_history()
 
-        if not p.is_alive():
-            dead_particles.append(p)
-
         p.decay = p.decay**1.001
 
-    delta_velocity = {}
-    for p in dead_particles:
-        particles.remove(p)
+    for p in DeadParticles:
+        Particles.remove(p)
 
+    DeltaVelocity = {}
 
     # Draw field visualization
     for gy in range(GRID_Y):
         for gx in range(GRID_X):
-            fv = field_grid[gy][gx]
+            fv = FieldGrid[gy][gx]
             is_selected = False
             if (gx,gy) == tuple(currently_selected):
                 is_selected = True
             fv.draw(screen, is_selected)
             fv.draw_arrow()
 
-    # Draw particles
-    for p in particles:
+    # Draw Particles
+    for p in Particles:
         p.draw(screen)
 
     # Flip the display
