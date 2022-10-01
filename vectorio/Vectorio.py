@@ -328,7 +328,7 @@ while running:
     evaluate_grid_vector_field(Particles, field_toggle)
     evaluate_image_vector_field(Particles, image_toggle)
     evaluate_random_vector_field(Particles, randomness_toggle)
-    evaluate_stickiness_vector_field(Particles, stickiness_toggle)
+    #evaluate_stickiness_vector_field(Particles, stickiness_toggle)
 
     # Update Particles
     DeadParticles = []
