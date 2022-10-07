@@ -64,18 +64,36 @@ start_point = Draggable(model='circle', color=color.orange, scale=.025, position
 ### ----------
 
 #---inventories
-field_lines = []
+acc_field_lines = []
+vel_field_lines = []
 line_colors = [color_hsv(174,0.8,0.9), color_hsv(157,0.8,0.9), color_hsv(140,0.7,0.9),color_hsv(123,0.8,0.9), color_hsv(103,0.8,0.9)]
 particle_colors = [color_hsv(31,0.9,0.9), color_hsv(51,0.8,0.9),color_hsv(333,0.9,0.9),color_hsv(196,0.9,0.9),color_hsv(246,0.9,0.9)]
 
 #---parameters
 TIME_SCALE = 1/1000.0
 ortho = 0
-draw = 0
 mouse_old_position = Vec3(0,0,0)
-drawing_line = False
 
-print("held keys are: "+str(held_keys.items()))
+#change drawing state
+drawing_line = False
+a_line_frequency = 5
+
+#vector strength of tails
+a_field_factor = 2
+v_preserve_factor = 0.7
+v_attract_factor = 0.3
+v_field_factor = 12
+sin_x_factor = 5
+sin_y_factor = 0.1
+sin_z_factor = 5
+random_x_factor = 0.5
+random_y_factor = 0
+random_z_factor = 0.5
+frequency_x = 15
+frequency_y = 20
+frequency_z = 25
+decay = 0.99
+
 
 class FloorBox(Entity):
     def __init__(self, position=(0,0,0)):
@@ -108,29 +126,45 @@ class FieldViz(Entity):
 ### LOGIC
 ### ----------
 
-#-----vector fields-----
-class DrawField(Entity):
+#-----acceleration vector fields-----
+class DrawAccField(Entity):
     def __init__(self, center, direction):
+        self.direction = Vec3(direction)
+        self.center = Vec3(center)
+        self.y_vec = Vec3(0,direction[1],0)
+
+        super().__init__(model = Mesh(vertices = [self.center, self.center + self.direction], mode = "line", thickness = 3),
+            color = color_hsv(280,1,0.8)
+        )
+    
+def GravityField(point, phase):
+    return Vec3(0,-1,0)
+
+def CosineField(point, phase):
+    return Vec3(sin_x_factor*math.sin(point[0]*frequency_x*phase[2]+phase[0]),
+    sin_y_factor*math.sin(point[1]*frequency_y),sin_z_factor*math.sin(point[2]*frequency_z*phase[3]+phase[1]))
+
+def RandomField(point, phase):
+    return Vec3(random_x_factor*random.random(), random_y_factor*random.random(), random_z_factor*random.random())
+
+
+vector_fields = [GravityField, CosineField, RandomField]
+#-----acceleration vector fields-----
+
+
+#-----velocity vector fields-----
+class DrawVelField(Entity):
+    def __init__(self,center,direction):
         self.direction = Vec3(direction)
         self.center = Vec3(center)
 
         super().__init__(model = Mesh(vertices = [self.center, self.center + self.direction], mode = "line", thickness = magnitude(self.direction)),
-            color = color_hsv(50,150,0.5)
+            color = color_hsv(320,1,0.8)
         )
-
-def GravityField(point):
-    return Vec3(0,-1,0)
-def CosineField(point):
-    scale = 2.0
-    innerScale = 10
-    return Vec3(scale*math.sin(point[0]*innerScale),scale*math.sin(point[1]*innerScale),scale*math.sin(point[2]*innerScale))
-
-#def RandomField(point):
-
-vector_fields = [GravityField, CosineField]
-#-----vector fields-----
+#-----velocity vector fields-----
 
 
+#-----particles-----
 class Particle(Entity):
     def __init__(self, particle_color, tail_color, world_position=Vec3(0,0,0)):
         super().__init__(
@@ -141,59 +175,78 @@ class Particle(Entity):
             texture = 'white_cube',
             color = color_hsv(random.random()*360, 1, random.uniform(0.9,1)),
             highlight_color = color.lime,
-            scale=0.05
+            scale=0.04
           #  scale = 0.1,
         )
         self.position = world_position
-        self.velocity = Vec3(0,0,0)
-        
+        self.velocity = Vec3(random.random()*3,random.random()*3,0)
+        0
         self.tail_color = tail_color
         self.particle_color = particle_color
         self.tail = Entity(model = Mesh(vertices=[Vec3(0), Vec3(0)], mode = "line", thickness = 1), color = self.tail_color)
         self.tail_list = []
         
         self.initial = True
-        self.decay = 1
         self.step = 0
+        #self.phase = [0,0]
+        self.phase = [math.pi*random.random(), math.pi*random.random(), random.uniform(0.4,0.9), random.uniform(0.4,0.9)]
 
 
     def update(self):
+        # stop particles that have low speeds 
+        if len(self.tail_list)>20 and magnitude(self.velocity)<0.1:
+            return
+
         # remove dead particles
         if self.x > 5.5 or self.x < -0.5 or self.z > 5.5 or self.z < -0.5 or self.y < 0:
             scene.entities.remove(self)
 
-        # apply vector fields
-        for l in field_lines:
-            n = 0
-            distance = magnitude(l.center-self.position)
-            if distance < 0.25:
-                n += 1
-                if n == 2:
-                    break
-                self.velocity = Vec3(tuple(self.velocity[i] + 0.5 * l.direction[i]/(magnitude(l.direction))
+        # apply vector fields and decay
+        v_line = False
+        closest_v_distance = 20
+        closest_v_direction = Vec3(0,0,0)
+
+        for l in vel_field_lines:
+            if magnitude(l.center-self.position)<0.25:
+                v_line = True
+                closest_v_field = l
+                closest_v_distance = min(closest_v_distance, magnitude(l.center-self.position))
+                closest_v_direction = l.direction
+        
+        if v_line == True:
+            v_attractor = closest_v_field.center - self.position
+            self.velocity = Vec3(tuple(v_preserve_factor*self.velocity[i] + v_attract_factor*v_attractor[i] +
+                                       v_field_factor*math.exp(-magnitude(closest_v_direction))*closest_v_direction[i]/magnitude(closest_v_direction)
+                                      for i in range(3)))
+        else:
+            for l in acc_field_lines:
+                n = 0
+                distance = magnitude(l.center-self.position)
+                if distance < 0.25:
+                    n += 1
+                    if n == 2:
+                        break
+                    self.velocity = Vec3(tuple(self.velocity[i] + a_field_factor * l.direction[i]/(magnitude(l.direction))
                                           for i in range(3)))
-                
-                
+          
+        for field in vector_fields:
+            self.velocity += field(self.position, self.phase)
+
+        self.velocity = Vec3(tuple(self.velocity[i]*decay for i in range(3)))
+
+        # draw tail
         old_position = self.world_position
         self.position += Vec3((TIME_SCALE*self.velocity[0], TIME_SCALE*self.velocity[1], TIME_SCALE*self.velocity[2]))
-        self.velocity = Vec3(tuple(self.velocity[i]*self.decay for i in range(3)))
-        for field in vector_fields:
-            self.velocity += field(self.position)
-        #diff = [d * TIME_SCALE for d in diff]
-        #self.world_position += tuple(diff)
         self.tail_list.append(self.position)
         self.step += 1
-        if self.step % 10 != 0:
+        if self.step % a_line_frequency != 0:
             if self.initial == True:
                 self.initial = False
             else:
                 self.tail.model.vertices = self.tail_list
                 self.tail.model.generate()
         
- 
-       # self.t += time.dt
-        # Called every frame
-
+#-----particles-----
 
 class Plane(Entity):
     def __init__(self, position=(0,0,0)):
@@ -229,10 +282,10 @@ def input(key):
         ortho = 1 - ortho
         camera.orthographic = ortho
 
-    if held_keys["up arrow"]:
+    if held_keys["a"]:
         camera.fov = camera.fov + 100*time.dt
 
-    if held_keys["down arrow"]:
+    if held_keys["d"]:
         camera.fov = camera.fov - 100*time.dt
 
     global p
@@ -255,21 +308,34 @@ def input(key):
         if drawing_line == False:
             mouse_old_position = mouse_position
             drawing_line = True
-            print("turned!")
         else:
             direction = Vec3(tuple(mouse_position[i] - mouse_old_position[i] for i in range(3)))
-            print(direction)
-            l = DrawField(mouse_old_position, direction)
+            print("held!!!")
+            l = DrawAccField(mouse_old_position, direction)
+            print("magnitude is: " + str(magnitude(direction)))
             mouse_old_position = mouse_position
             if magnitude(direction) > 0.01:
-                field_lines.append(l)
-    else:
+                acc_field_lines.append(l)
+
+    if held_keys["x"]:
+        mouse_position = mouse.world_point
+        if drawing_line == False:
+            mouse_old_position = mouse_position
+            drawing_line = True
+        else:
+            direction = Vec3(tuple(mouse_position[i] - mouse_old_position[i] for i in range(3)))
+            l = DrawVelField(mouse_old_position, direction)
+            print("magnitude is: " + str(magnitude(direction)))
+            mouse_old_position = mouse_position
+            if magnitude(direction) > 0.01:
+                vel_field_lines.append(l)
+
+    if key == "c":
         drawing_line = False
-        z_points = []
 
 
  #   if held_keys["x"]:
- #       l = DrawField(mouse.world_point, (1,2,1))
+ #       l = DrawAccField(mouse.world_point, (1,2,1))
 
 #
 #    if held_keys["left mouse"]:
