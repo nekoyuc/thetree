@@ -48,16 +48,6 @@ print("Vec3 back is: " + str(testback))
 
 print("\n\n\n")
 l = Entity(model = "line")
-print(l.getNumNodes())
-print(l.getX())
-print(l.getY())
-print(l.getZ())
-print(l.isEmpty())
-print(l.isHidden)
-print(l.getName())
-#print(dir(l.model))
-print(l.model.vertices)
-print("\n\n\n")
 l.model.vertices = ((1,2,3),(2,3,4),(3,4,5))
 l.model.generate()
 
@@ -72,15 +62,13 @@ def pause_handler_input(key):
 
 pause_handler.input = pause_handler_input
 
-#line.segment(Vec3(1,2,3), Vec3(2,3,4), Vec4(1,1,1,1), 3, color_hsv(0, 0, random.uniform(.9, 1.0)))
-
 
 ### STATE
 ### ----------
 #---inventories
 acc_field_lines = []
 vel_field_lines = []
-line_colors = [color_hsv(174,0.8,0.9), color_hsv(157,0.8,0.9), color_hsv(140,0.7,0.9),color_hsv(123,0.8,0.9), color_hsv(103,0.8,0.9)]
+tail_colors = [color_hsv(174,0.8,0.9), color_hsv(157,0.8,0.9), color_hsv(140,0.7,0.9),color_hsv(123,0.8,0.9), color_hsv(103,0.8,0.9)]
 particle_colors = [color_hsv(31,0.9,0.9), color_hsv(51,0.8,0.9),color_hsv(333,0.9,0.9),color_hsv(196,0.9,0.9),color_hsv(246,0.9,0.9)]
 
 #---parameters
@@ -98,19 +86,18 @@ TIME_SCALE = 1/1500.0
 #vector strength of tails
 a_field_factor = 2
 v_preserve_factor = 0.6
-v_attract_factor = 14
-v_field_factor = 14
-#sin_x_factor = 2
-#sin_y_factor = 0.1
-#sin_z_factor = 2
-#frequency_x = 15
-#frequency_y = 20
-#frequency_z = 25
+v_attract_factor = 12
+v_field_factor = 22
+v_rotation_factor = 600
 random_x_factor = 0.2
 random_y_factor = 0
 random_z_factor = 0.2
 decay = 0.99
 
+#particle seeds
+radius = 0.2
+seed_n = 6
+rotation_angle = 0
 
 class FloorBox(Entity):
     def __init__(self, position=(0,0,0)):
@@ -156,13 +143,8 @@ class DrawAccField(Entity):
 def GravityField(point):
     return Vec3(0,-1,0)
 
-#def CosineField(point, phase):
-#    return Vec3(sin_x_factor*math.sin(point[0]*frequency_x*phase[2]+phase[0]),
-#    sin_y_factor*math.sin(point[1]*frequency_y),sin_z_factor*math.sin(point[2]*frequency_z*phase[3]+phase[1]))
-
 def RandomField(point):
     return Vec3(random_x_factor*random.random(), random_y_factor*random.random(), random_z_factor*random.random())
-
 
 vector_fields = [GravityField]
 #-----acceleration vector fields-----
@@ -183,9 +165,6 @@ def RotationField(p_position, l_position, direction):
     projection = np.dot(p_to_l, direction) * direction / np.dot(direction, direction)
     rotation = np.cross(p_to_l - projection, direction)
     return rotation
-
-r1 = RotationField(Vec3(2,3,4), Vec3(1,0,1), Vec3(0,1,0))
-print(r1)
 #-----velocity vector fields-----
 
 
@@ -206,10 +185,10 @@ class ParticleUpdater(Entity):
         i = 0
         dead_particles = []
         self.skip_count += 1
+        colors = []
         for particle in self.particle_list:
             #new line segment should be a tuple of two points ((x1,y1,z1),(x2,y2,z2))
-            if random.random() < 0.5:
-                continue
+            #if (random.random() <0.8): continue
             new_line_segment = particle.do_update()
 
             if new_line_segment == None:
@@ -222,16 +201,20 @@ class ParticleUpdater(Entity):
             vertices.append(new_line_segment[0])
             vertices.append(new_line_segment[1])
             tris.append((i,i+1))
+            colors.append(particle.tail_color)
+            colors.append(particle.tail_color)
             i += 2
         for p in dead_particles:
             self.particle_list.remove(p)
         if len(vertices) == 0:
             return
         #tail = Entity(model = Mesh(vertices=vertices, triangles=tris, mode = "line", thickness = 2), color = color.blue)
-        tail = Mesh(vertices=vertices, triangles=tris, mode="line", thickness=2)
+        tail = Mesh(vertices=vertices, triangles=tris, mode="line", thickness=1, colors = colors)
         tail.reparentTo(self)
         #self.attach_new_node(tail)
         self.tails.append(tail)
+        #if self.skip_count % 60 == 0:
+        #    self.combine()
 
 particle_list = []
 particle_updater = ParticleUpdater(particle_list)
@@ -246,14 +229,13 @@ class Particle(Entity):
             texture = 'white_cube',
             color = color_hsv(random.random()*360, 1, random.uniform(0.9,1)),
             highlight_color = color.lime,
-            scale=0.04
+            scale=0.02
           #  scale = 0.1,
         )
         self.position = world_position
         self.velocity = Vec3(random.random()*3,random.random()*3,0)
         self.tail_color = tail_color
         self.particle_color = particle_color
-        self.tail = Entity(model = Mesh(vertices=[Vec3(0), Vec3(0)], mode = "line", thickness = 1), color = self.tail_color)
         self.tail_list = []
         
         self.step = 0
@@ -269,13 +251,10 @@ class Particle(Entity):
             destroy(self)
             # TODO remove from particle list
             return None
-            #ursinastuff.destroy(self)
-            #scene.entities.remove(self)
 
         # set up particle stop
         if self.within_range == False:
             return None
-
 
         ### apply v field
         # find closest v_field to particle
@@ -309,15 +288,17 @@ class Particle(Entity):
 
 
         ## apply vector fields and decay to velocity
-        self.velocity = Vec3(tuple(v_preserve_factor*self.velocity[i] + v_attract_factor*v_attractor[i] + 0*RotationField(self.position, closest_vf.center, closest_vdir)[i] + 
-                                       v_field_factor*math.exp(-closest_vdis)*closest_vdir[i]/magnitude(closest_vdir)
+        self.velocity = Vec3(tuple(v_preserve_factor*self.velocity[i] # last velocity
+                                   + v_attract_factor*v_attractor[i] # attraction to draw field
+                                   + v_rotation_factor*RotationField(self.position, closest_vf.center, closest_vdir)[i] # rotation field
+                                   + v_field_factor*math.exp(-closest_vdis)*closest_vdir[i]/magnitude(closest_vdir) # v field intensity
                                       for i in range(3)))
         
         for field in vector_fields:
             self.velocity += field(self.position)
 
         #print(RotationField(self.position, closest_vf.center, closest_vdir))
-        self.position += Vec3(tuple(TIME_SCALE*self.velocity[i] + 0.01*(random.random() - 0.5) + 2*RotationField(self.position, closest_vf.center, closest_vdir)[i]
+        self.position += Vec3(tuple(TIME_SCALE*self.velocity[i] + 0.01*(random.random() - 0.5) + 0*RotationField(self.position, closest_vf.center, closest_vdir)[i]
                                     for i in range(3)))
 
         self.velocity = Vec3(tuple(self.velocity[i]*decay for i in range(3)))
@@ -330,7 +311,7 @@ class Particle(Entity):
         else:
             return (self.tail_list[-1], self.tail_list[-2])
 
-    def update_old(self):
+    def old_update(self):
         # stop particles that have low speeds 
         if len(self.tail_list)>20 and magnitude(self.velocity)<0.1:
             return
@@ -380,7 +361,7 @@ class Particle(Entity):
 
 
         ## apply vector fields and decay to velocity
-        self.velocity = Vec3(tuple(v_preserve_factor*self.velocity[i] + v_attract_factor*v_attractor[i] + 0*RotationField(self.position, closest_vf.center, closest_vdir)[i] + 
+        self.velocity = Vec3(tuple(v_preserve_factor*self.velocity[i] + v_attract_factor*v_attractor[i] + v_rotation_factor*RotationField(self.position, closest_vf.center, closest_vdir)[i] + 
                                        v_field_factor*math.exp(-closest_vdis)*closest_vdir[i]/magnitude(closest_vdir)
                                       for i in range(3)))
         
@@ -388,7 +369,7 @@ class Particle(Entity):
             self.velocity += field(self.position)
 
      #   print(RotationField(self.position, closest_vf.center, closest_vdir))
-        self.position += Vec3(tuple(TIME_SCALE*self.velocity[i] + 0.01*(random.random() - 0.5) + 2*RotationField(self.position, closest_vf.center, closest_vdir)[i]
+        self.position += Vec3(tuple(TIME_SCALE*self.velocity[i] + 0.01*(random.random() - 0.5) + 0*RotationField(self.position, closest_vf.center, closest_vdir)[i]
                                     for i in range(3)))
 
         self.velocity = Vec3(tuple(self.velocity[i]*decay for i in range(3)))
@@ -400,6 +381,32 @@ class Particle(Entity):
         if self.step % draw_tail_frequency == 0:
             self.tail.model.vertices = self.tail_list
             self.tail.model.generate()
+
+class ParticleSeeds(Entity):
+    def __init__(self, position = (0,0,0), radius = 0.3, seed_n = 6, rotation_angle = 0):
+        #self.position = Vec3(position)
+        super().__init__(
+            parent = scene,
+            position = position
+        )
+        self.position = (2.5,0,2.5)
+        self.radius = radius
+        self.look_at(camera,axis="up")
+        self.seed_n = seed_n
+        self.rotation_angle = rotation_angle
+        c = models.procedural.circle.Circle(radius = radius, resolution = 32, thickness = 2)
+        c.reparentTo(self)
+    def pump(self):
+        angle = 360/self.seed_n
+        spots = []
+        for i in range(self.seed_n):
+            point = Vec3(self.position[0] + self.radius*sin(math.radians(i*angle + self.rotation_angle)),
+                         0.1,
+                         self.position[2] + self.radius*cos(math.radians(i*angle + self.rotation_angle)))
+            spots.append(point)
+        return spots
+
+circle = ParticleSeeds(position =(0,0,0), radius = radius, seed_n = seed_n)
 #-----particles-----
 
 
@@ -426,32 +433,23 @@ class Plane(Entity):
 
 p = Plane(plane_on)
 
-
-#fields = [[[FieldViz((GRID_W * x, GRID_H * y, GRID_D * z)) for z in range(GRID_D_N)] for y in range(GRID_H_N)] for x in range(GRID_W_N)]
-#print(fields)
-
-#fields[1][2][3].color = color.blue
-
 def input(key):
     global particle_list
 
+    #switch between ortho and pers
     if key == "tab":
         global ortho
         ortho = 1 - ortho
         camera.orthographic = ortho
-
+    
+    #change fov
     if held_keys["a"]:
         camera.fov = camera.fov + 100*time.dt
 
     if held_keys["d"]:
         camera.fov = camera.fov - 100*time.dt
 
-    global plane_on
-    if held_keys["left shift"]:
-        plane_on = False
-    else:
-        plane_on = True
-
+    #change plane distance
     global p
     if held_keys["w"]:
         p.distance +=0.05
@@ -459,16 +457,35 @@ def input(key):
     if held_keys["s"]:
         p.distance = max(0, p.distance-0.05)
 
-    if held_keys["space"]:
-        new_particle = Particle(random.choice(particle_colors),random.choice(line_colors),
+    #change particle seeds
+    global circle
+    if held_keys["up arrow"]:
+        circle.position = Vec3(circle.position[0], circle.position[1], min(circle.position[2]+0.05, 5.5))
+    if held_keys["down arrow"]:
+        circle.position = Vec3(circle.position[0], circle.position[1], max(circle.position[2]-0.05, -0.5))
+    if held_keys["left arrow"]:
+        circle.position = Vec3(max(circle.position[0]-0.05, -0.5), circle.position[1], circle.position[2])
+    if held_keys["right arrow"]:
+        circle.position = Vec3(min(circle.position[0]+0.05, 5.5), circle.position[1], circle.position[2])
+    if held_keys["-"]:
+        circle.rotation_angle -= 1
+    if held_keys["="]:
+        circle.rotation_angle += 1
+    #pump particles
+    if held_keys["1"]:
+        new_particle = Particle(random.choice(particle_colors),random.choice(tail_colors),
                  Vec3(0.01*random.random() + mouse.world_point[0], mouse.world_point[1], 0.01*random.random() + mouse.world_point[2]))
         particle_list.append(new_particle)
+
+    if held_keys["2"]:
+        for i in range(6):
+            new_p = Particle(random.choice(particle_colors), random.choice(tail_colors), circle.pump()[i])
+            particle_list.append(new_p)
 
     global mouse_old_position
     global drawing_line
 
-    # draw field lines
-
+    #draw field lines
     if held_keys["z"]:
         mouse_position = mouse.world_point
         if drawing_line == False:
@@ -497,18 +514,6 @@ def input(key):
     if held_keys["z"] == 0 and held_keys["x"] == 0:
         drawing_line = False
 
-
- #   if held_keys["x"]:
- #       l = DrawAccField(mouse.world_point, (1,2,1))
-
-#
-#    if held_keys["left mouse"]:
-#        idxs = [int(mouse.world_point[i]) for i in range(3)]
-#        idxs = [max(min(j,11),0) for j in idxs]
-#        fields[idxs[0]][idxs[1]][idxs[2]].color = color.blue
-#        p = Particle(mouse.world_point)
-
-
     if key == 'left mouse down':
         
         return
@@ -516,7 +521,6 @@ def input(key):
         farPoint = panda3d.core.LPoint3f(0,0,0)
         matrix = camera.lens.getProjectionMat()
         
-
         camera.perspective_lens.extrude(mouse.position, nearPoint, farPoint)
 
         hit_info = raycast(camera.world_position, camera.forward, distance=5)
