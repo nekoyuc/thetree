@@ -3,14 +3,22 @@ from ursina.prefabs.first_person_controller import EditorCamera
 import panda3d
 import numpy as np
 import math
+from datetime import datetime
+import time
 
 from panda3d.core import CollisionRay
 from panda3d.core import Quat,Vec3, Vec4
 from panda3d.core import MeshDrawer
 from panda3d.core import LineSegs, NodePath
+from panda3d.core import PStatClient
 
+debug = False
+def dprint(string):
+    if debug == True:
+        print(string)
 
 app = Ursina()
+#PStatClient.connect()
 
 
 ### CONFIGURATION
@@ -21,13 +29,18 @@ ROOM_D = int(6)
 ROOM_H = int(6)
 
 def magnitude(vector):
-    return math.sqrt(sum(pow(element, 2) for element in vector))
-
+    m = 0
+    for i in (0,1,2):
+        m += vector[i]**2
+    return math.sqrt(m)
 def color_rgb(r,g,b,a=255):
     return color.rgba(r,g,b,a=255)
 
 def color_hsv(h,s,v,a=1):
     return color.color(h,s,v,a=1)
+
+def now():
+    return datetime.now().time()
 
 
 #ls = LineSegs()
@@ -35,18 +48,18 @@ def color_hsv(h,s,v,a=1):
 #ls.setThickness(3)
 #ls.moveTo(Vec3(1,2,3))
 #ls.drawTo(Vec3(2,3,4))
-#print("move to is " + str(ls.moveTo(Vec3(1,2,3))))
-#print("vertice number is: " + str(ls.getNumVertices()))
+#dprint("move to is " + str(ls.moveTo(Vec3(1,2,3))))
+#dprint("vertice number is: " + str(ls.getNumVertices()))
 #NodePath(ls.create())
 
 test = Vec3(1,2,3)
-print("Vec3 is:" + str(test))
+dprint("Vec3 is:" + str(test))
 testnp = np.array(test)
-print("np array is: " + str(testnp))
+dprint("np array is: " + str(testnp))
 testback = Vec3(tuple(testnp[i] for i in range(3)))
-print("Vec3 back is: " + str(testback))
+dprint("Vec3 back is: " + str(testback))
 
-print("\n\n\n")
+dprint("\n\n\n")
 l = Entity(model = "line")
 l.model.vertices = ((1,2,3),(2,3,4),(3,4,5))
 l.model.generate()
@@ -68,6 +81,7 @@ pause_handler.input = pause_handler_input
 #---inventories
 acc_field_lines = []
 vel_field_lines = []
+particle_list = []
 tail_colors = [color_hsv(174,0.8,0.9), color_hsv(157,0.8,0.9), color_hsv(140,0.7,0.9),color_hsv(123,0.8,0.9), color_hsv(103,0.8,0.9)]
 particle_colors = [color_hsv(31,0.9,0.9), color_hsv(51,0.8,0.9),color_hsv(333,0.9,0.9),color_hsv(196,0.9,0.9),color_hsv(246,0.9,0.9)]
 
@@ -84,20 +98,19 @@ mouse_old_position = Vec3(0,0,0)
 TIME_SCALE = 1/1500.0
 
 #vector strength of tails
-a_field_factor = 2
-v_preserve_factor = 0.6
-v_attract_factor = 12
-v_field_factor = 22
-v_rotation_factor = 600
-random_x_factor = 0.2
-random_y_factor = 0
-random_z_factor = 0.2
-decay = 0.99
+a_field_factor = 1
 
-#particle seeds
-radius = 0.2
-seed_n = 6
-rotation_angle = 0
+v_preserve_factor = 0.3
+v_attract_factor = 4
+v_field_factor = 300
+v_rotation_factor = 700
+
+p_random_factor = 0.005
+
+#random_x_factor = 0.1
+#random_y_factor = 0
+#random_z_factor = 0.1
+decay = 0.99
 
 class FloorBox(Entity):
     def __init__(self, position=(0,0,0)):
@@ -129,6 +142,10 @@ class FieldViz(Entity):
 
 ### LOGIC
 ### ----------
+#-----field density-----
+
+#-----field density-----
+
 #-----acceleration vector fields-----
 class DrawAccField(Entity):
     def __init__(self, center, direction):
@@ -143,8 +160,8 @@ class DrawAccField(Entity):
 def GravityField(point):
     return Vec3(0,-1,0)
 
-def RandomField(point):
-    return Vec3(random_x_factor*random.random(), random_y_factor*random.random(), random_z_factor*random.random())
+#def RandomField(point):
+#    return Vec3(random_x_factor*random.random(), random_y_factor*random.random(), random_z_factor*random.random())
 
 vector_fields = [GravityField]
 #-----acceleration vector fields-----
@@ -167,8 +184,124 @@ def RotationField(p_position, l_position, direction):
     return rotation
 #-----velocity vector fields-----
 
+class BaseParticle(Entity):
+    def __init__(self):
+        super().__init__(
+            parent = None,
+            model = 'sphere',
+            scale = 0.02
+        )
+
+god_particle = BaseParticle()
+
 
 #-----particles-----
+class Particle(Entity):
+    def __init__(self, particle_color, tail_color, world_position=Vec3(0,0,0)):
+        super().__init__(
+            parent = scene,
+            world_position = world_position,
+            #model = 'sphere',
+            origin_y = .5,
+           # texture = 'white_cube',
+            color = color_hsv(random.random()*360, 1, random.uniform(0.9,1)),
+           # highlight_color = color.lime,
+            #scale=0.02
+          #  scale = 0.1,
+        )
+        self.position = world_position
+        self.velocity = Vec3(random.random()*3,random.random()*3,0)
+        self.tail_color = tail_color
+        self.particle_color = particle_color
+        self.tail_list = []
+        global god_particle
+        god_particle.instanceTo(self)
+        
+        self.step = 0
+        self.within_range = True
+
+    def do_update(self):
+        # stop particles that have low speeds 
+        if len(self.tail_list)>20 and magnitude(self.velocity)<0.1:
+            return None
+
+
+        # remove dead particles
+        pos = self.position
+        if pos[0] > 5.5 or pos[0] < -0.5 or pos[2] > 5.5 or pos[2] < -0.5 or pos[1] < 0:
+            destroy(self)
+            # TODO remove from particle list
+            return None
+
+
+        # set up particle stop
+        if self.within_range == False:
+            return None
+
+        ### apply v field
+        # find closest v_field to particle
+        v_line = False
+        closest_vdis = 20
+
+        for l in vel_field_lines:
+            distance = magnitude(l.center - pos)
+            if distance < 0.25:
+               if distance < closest_vdis:
+                   closest_vdis = distance
+                   v_line = True
+                   closest_vf = l
+
+
+        if v_line == False:
+            self.within_range = False
+            return None
+
+        v_attractor = closest_vf.center - pos
+ 
+
+        ### apply a field
+        for l in acc_field_lines:
+            n = 0
+            distance = magnitude(l.center-pos)
+            if distance < 0.25:
+                n += 1
+                if n == 2:
+                    break
+                for i in range(3):
+                    self.velocity[i] = self.velocity[i] + a_field_factor*l.direction[i]/(magnitude(l.direction))
+               # self.velocity = Vec3(tuple(self.velocity[i] + a_field_factor * l.direction[i]/(magnitude(l.direction))
+                #                           for i in range(3)))
+
+        rot = RotationField(self.position, closest_vf.center, closest_vf.direction)
+        ## apply vector fields and decay to velocity
+        self.velocity = Vec3(tuple(v_preserve_factor*self.velocity[i] # last velocity
+                                   + v_attract_factor*v_attractor[i] # attraction to draw field
+                                   + v_rotation_factor*rot[i] # rotation field v_rotation_factor
+                                   + v_field_factor*closest_vf.direction[i] # v field intensity
+                                   #v_field_factor*math.exp(-closest_vdis)*closest_vf.direction[i]/magnitude(closest_vf.direction) # v field intensity
+                                   + GravityField(self.position)[i] # gravity
+                                      for i in range(3)))
+
+
+        #dprint(RotationField(self.position, closest_vf.center, closest_vf.direction))
+        self.position += Vec3(tuple(TIME_SCALE*self.velocity[i] # time scale
+                                    + p_random_factor * (random.random() - 0.5) # positional randomness
+                                    + 0*rot[i]
+                                    for i in range(3)))
+
+
+        self.velocity = Vec3(tuple(self.velocity[i]*decay for i in range(3)))
+        self.tail_list.append(self.position)
+        #dprint("\n step 11:")
+        #dprint(now())
+
+        if len(self.tail_list) < 2:
+            return (self.tail_list[-1],)
+        else:
+            return (self.tail_list[-1], self.tail_list[-2])
+       # dprint("\n step 12:")
+        #dprint(now())
+
 class ParticleUpdater(Entity):
     def __init__(self, particle_list):
         super().__init__(
@@ -177,6 +310,7 @@ class ParticleUpdater(Entity):
         self.particle_list = particle_list
         self.tails = []
         self.skip_count = 0
+        self.running_average_time_ms = 0
     def update(self):
         if len(self.particle_list) == 0:
             return
@@ -186,10 +320,15 @@ class ParticleUpdater(Entity):
         dead_particles = []
         self.skip_count += 1
         colors = []
+        start_time_ms = time.time_ns() / 1e6
+        dprint("num particle: " + str(len(self.particle_list)))
         for particle in self.particle_list:
             #new line segment should be a tuple of two points ((x1,y1,z1),(x2,y2,z2))
             #if (random.random() <0.8): continue
+            particle_start_time = time.time_ns() / 1e6
             new_line_segment = particle.do_update()
+            particle_end_time = time.time_ns() / 1e6
+            dprint("particle update time: " + str(particle_end_time-particle_start_time))
 
             if new_line_segment == None:
                 dead_particles.append(particle)
@@ -206,110 +345,23 @@ class ParticleUpdater(Entity):
             i += 2
         for p in dead_particles:
             self.particle_list.remove(p)
+        end_time_ms = time.time_ns() / 1e6
+        dprint(end_time_ms-start_time_ms)
+        if self.running_average_time_ms == 0: self.running_average_time_ms = (end_time_ms-start_time_ms)
+        self.running_average_time_ms = 0.99*self.running_average_time_ms+(0.01*(end_time_ms-start_time_ms))
+       # dprint(self.running_average_time_ms)
         if len(vertices) == 0:
             return
+       
         #tail = Entity(model = Mesh(vertices=vertices, triangles=tris, mode = "line", thickness = 2), color = color.blue)
-        tail = Mesh(vertices=vertices, triangles=tris, mode="line", thickness=1, colors = colors)
-        tail.reparentTo(self)
+        #tail = Mesh(vertices=vertices, triangles=tris, mode="line", thickness=1, colors = colors)
+        #tail.reparentTo(self)
         #self.attach_new_node(tail)
-        self.tails.append(tail)
+        #self.tails.append(tail)
         #if self.skip_count % 60 == 0:
         #    self.combine()
 
-particle_list = []
 particle_updater = ParticleUpdater(particle_list)
-
-class Particle(Entity):
-    def __init__(self, particle_color, tail_color, world_position=Vec3(0,0,0)):
-        super().__init__(
-            parent = scene,
-            world_position = world_position,
-            model = 'sphere',
-            origin_y = .5,
-            texture = 'white_cube',
-            color = color_hsv(random.random()*360, 1, random.uniform(0.9,1)),
-            highlight_color = color.lime,
-            scale=0.02
-          #  scale = 0.1,
-        )
-        self.position = world_position
-        self.velocity = Vec3(random.random()*3,random.random()*3,0)
-        self.tail_color = tail_color
-        self.particle_color = particle_color
-        self.tail_list = []
-        
-        self.step = 0
-        self.within_range = True
-
-    def do_update(self):
-        # stop particles that have low speeds 
-        if len(self.tail_list)>20 and magnitude(self.velocity)<0.1:
-            return None
-
-        # remove dead particles
-        if self.x > 5.5 or self.x < -0.5 or self.z > 5.5 or self.z < -0.5 or self.y < 0:
-            destroy(self)
-            # TODO remove from particle list
-            return None
-
-        # set up particle stop
-        if self.within_range == False:
-            return None
-
-        ### apply v field
-        # find closest v_field to particle
-        v_line = False
-        closest_vdis = 20
-        closest_vdir = Vec3(0,0,0)
-
-        for l in vel_field_lines:
-            if magnitude(l.center-self.position)<0.25:
-                v_line = True
-                closest_vf = l
-                closest_vdis = min(closest_vdis, magnitude(l.center-self.position))
-                closest_vdir = l.direction
-        
-        if v_line == False:
-            self.within_range = False
-            return None
-
-        v_attractor = closest_vf.center - self.position
-
-        ### apply a field
-        for l in acc_field_lines:
-            n = 0
-            distance = magnitude(l.center-self.position)
-            if distance < 0.25:
-                n += 1
-                if n == 2:
-                    break
-                self.velocity = Vec3(tuple(self.velocity[i] + a_field_factor * l.direction[i]/(magnitude(l.direction))
-                                           for i in range(3)))
-
-
-        ## apply vector fields and decay to velocity
-        self.velocity = Vec3(tuple(v_preserve_factor*self.velocity[i] # last velocity
-                                   + v_attract_factor*v_attractor[i] # attraction to draw field
-                                   + v_rotation_factor*RotationField(self.position, closest_vf.center, closest_vdir)[i] # rotation field
-                                   + v_field_factor*math.exp(-closest_vdis)*closest_vdir[i]/magnitude(closest_vdir) # v field intensity
-                                      for i in range(3)))
-        
-        for field in vector_fields:
-            self.velocity += field(self.position)
-
-        #print(RotationField(self.position, closest_vf.center, closest_vdir))
-        self.position += Vec3(tuple(TIME_SCALE*self.velocity[i] + 0.01*(random.random() - 0.5) + 0*RotationField(self.position, closest_vf.center, closest_vdir)[i]
-                                    for i in range(3)))
-
-        self.velocity = Vec3(tuple(self.velocity[i]*decay for i in range(3)))
-
-        # draw tail
-        self.tail_list.append(self.position)
-
-        if len(self.tail_list) < 2:
-            return (self.tail_list[-1],)
-        else:
-            return (self.tail_list[-1], self.tail_list[-2])
 
 class ParticleSeeds(Entity):
     def __init__(self, position = (0,0,0), radius = 0.3, seed_n = 6, rotation_angle = 0):
@@ -323,8 +375,9 @@ class ParticleSeeds(Entity):
         self.look_at(camera,axis="up")
         self.seed_n = seed_n
         self.rotation_angle = rotation_angle
-        c = models.procedural.circle.Circle(radius = radius, resolution = 32, thickness = 2)
-        c.reparentTo(self)
+        self.circle = models.procedural.circle.Circle(radius = self.radius, resolution = self.seed_n, thickness = 2, mode = 'ngon')
+        self.circle.reparentTo(self)
+        
     def pump(self):
         angle = 360/self.seed_n
         spots = []
@@ -334,8 +387,13 @@ class ParticleSeeds(Entity):
                          self.position[2] + self.radius*cos(math.radians(i*angle + self.rotation_angle)))
             spots.append(point)
         return spots
+    def update(self):
+        self.circle.removeNode()
+        self.circle = models.procedural.circle.Circle(radius = self.radius, resolution = self.seed_n, thickness = 2, mode = 'ngon')
+        self.circle.reparentTo(self)
 
-circle = ParticleSeeds(position =(0,0,0), radius = radius, seed_n = seed_n)
+circle = ParticleSeeds((0,0,0), 0.2, 6)
+dprint(dir(circle.circle))
 #-----particles-----
 
 
@@ -362,7 +420,11 @@ class Plane(Entity):
 
 p = Plane(plane_on)
 
-def input(key):
+class Controller(Entity):
+  def __init__(self):
+      super().__init__(parent=scene)
+  def input(self,key):
+    dprint("Got input yay")
     global particle_list
 
     #switch between ortho and pers
@@ -381,10 +443,10 @@ def input(key):
     #change plane distance
     global p
     if held_keys["w"]:
-        p.distance +=0.05
+        p.distance +=0.02
 
     if held_keys["s"]:
-        p.distance = max(0, p.distance-0.05)
+        p.distance = max(0, p.distance-0.02)
 
     #change particle seeds
     global circle
@@ -400,6 +462,14 @@ def input(key):
         circle.rotation_angle -= 1
     if held_keys["="]:
         circle.rotation_angle += 1
+    if held_keys["["]:
+        circle.radius = max(0.05, circle.radius - 0.01)
+    if held_keys["]"]:
+        circle.radius += 0.01
+    if held_keys["9"]:
+        circle.seed_n = max(3, circle.seed_n -1)
+    if held_keys["0"]:
+        circle.seed_n += 1
     #pump particles
     if held_keys["1"]:
         new_particle = Particle(random.choice(particle_colors),random.choice(tail_colors),
@@ -407,7 +477,7 @@ def input(key):
         particle_list.append(new_particle)
 
     if held_keys["2"]:
-        for i in range(6):
+        for i in range(circle.seed_n):
             new_p = Particle(random.choice(particle_colors), random.choice(tail_colors), circle.pump()[i])
             particle_list.append(new_p)
 
@@ -476,10 +546,11 @@ def input(key):
         #c = Canvas((0,0,0))
         #c.rotation = -camera.world_rotation
 
-        print("hit info: " + str(hit_info.normal) + ", type is " + str(type(hit_info.normal)) + "\n\n--------------------\n\n")
+        dprint("hit info: " + str(hit_info.normal) + ", type is " + str(type(hit_info.normal)) + "\n\n--------------------\n\n")
 
 
 
 
 player = EditorCamera()
+c = Controller()
 app.run()
