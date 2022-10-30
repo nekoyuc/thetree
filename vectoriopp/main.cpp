@@ -79,7 +79,7 @@ int main( void )
     1.0f, -1.0f, 0.0f,
     0.0f,  1.0f, 0.0f,
   };
-  ColoredTriangles ct(&g_single_triangle_data[0], 9);
+  CameraFacingTriangles drawPlane(&g_single_triangle_data[0], 9);
   double lastTime = glfwGetTime();
   do {
     // Clear the screen
@@ -90,7 +90,7 @@ int main( void )
 
     particleSystem.update(delta);
     particleSystem.render();
-    ct.render();
+    drawPlane.render();
 
     
     // Swap buffers

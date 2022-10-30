@@ -5,6 +5,7 @@
 
 // Include GLM
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "ColoredTriangles.h"
 
@@ -37,11 +38,20 @@ ColoredTriangles::~ColoredTriangles() {
   glDeleteProgram(mProgramId);
 }
 
+glm::mat4 ColoredTriangles::getMVPMatrix() {
+  return getProjectionMatrix()*getViewMatrix();
+}
+
 void ColoredTriangles::render() {
+  mModelMatrix = glm::mat4(1.0);
   glm::mat4 ProjectionMatrix = getProjectionMatrix();
-  glm::mat4 ViewMatrix = getViewMatrix();
-  glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
+  //  glm::mat4 ViewMatrix = getViewMatrix();
+  //  glm::mat4 ViewProjectionMatrix = mModelMatrix * ProjectionMatrix * ViewMatrix;
+  //  glm::mat4 ViewProjectionMatrix = getViewMatrix();
+  glm::mat4 ViewProjectionMatrix(getMVPMatrix());
   // Use our shader
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glUseProgram(mProgramId);
 
   glUniformMatrix4fv(mViewProjMatrixId, 1, GL_FALSE, &ViewProjectionMatrix[0][0]);
@@ -59,5 +69,12 @@ void ColoredTriangles::render() {
   glDrawArrays(GL_TRIANGLES, 0, 3); // 3 indices starting at 0 -> 1 triangle
   glDisableVertexAttribArray(0);
 }
-  
+
+CameraFacingTriangles::CameraFacingTriangles(GLfloat* vertexBufferData, int numVertices) :
+  ColoredTriangles(vertexBufferData, numVertices) {
+}
+
+glm::mat4 CameraFacingTriangles::getMVPMatrix() {
+  return glm::translate(getProjectionMatrix(), glm::vec3(0.0f,0.0f,-3.0f));
+}
 
