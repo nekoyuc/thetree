@@ -1,4 +1,4 @@
-from re import A
+from re import A, I
 from ursina import *
 from ursina.prefabs.first_person_controller import EditorCamera
 import panda3d
@@ -63,7 +63,7 @@ def now():
 #NodePath(ls.create())
 
 #l = Entity(model = "line")
-#l.model.vertices = ((1,2,3),(2,3,4),(3,4,5))
+#l.model.vertices = ((0,1,0),(3,5,3),(5,1,0))
 #l.model.generate()
 
 start_point = Draggable(model='circle', color=color.orange, scale=.025, position=(-0,-0))
@@ -83,7 +83,10 @@ pause__handler.input = pause__handler_input
 #---inventories
 ACC_FIELD_LINES = []
 VEL_FIELD_LINES = []
+ATT_FIELD_LINES = []
 PARTICLE_LIST = []
+DENSITY_MAP = []
+TEMP_LINE = {}
 TAIL_COLORS = [color_hsv(174,0.8,0.9), color_hsv(157,0.8,0.9), color_hsv(140,0.7,0.9),color_hsv(123,0.8,0.9), color_hsv(103,0.8,0.9)]
 PARTICLE_COLORS = [color_hsv(31,0.9,0.9), color_hsv(51,0.8,0.9),color_hsv(333,0.9,0.9),color_hsv(196,0.9,0.9),color_hsv(246,0.9,0.9)]
 
@@ -98,21 +101,31 @@ ortho_ = 0
 drawling_line_ = False
 plane_on_ = True
 pause_ = False
+render = True
 
 #initial parameters
 draw_tail_frequency_ = 15
 mouse_old_position_ = Vec3(0,0,0)
 time_scale_ = 1/1500.0
+max_distance = 0.25
 
 #vector strength of tails
-a_field_factor_ = 1
+acc_field_factor_ = 1
 
 v_preserve_factor_ = 0.6
 v_attract_factor_ = 5
 v_field_factor_ = 300
 v_rotation_factor_ = 800
 
+att_field_factor_ = 10
+
 p_random_factor_ = 0.003
+
+density_expansion = 3
+density_max = 14
+density_threshold = 250
+
+profile_factor = 0.06
 
 #random_x_factor = 0.1
 #random_y_factor = 0
@@ -149,21 +162,22 @@ class FieldViz(Entity):
 ### LOGIC
 ### ----------
 #-----field density-----
-def density_stamp_grid(position):
-    x = int(position[0]/CELL_W)
-    y = int(position[1]/CELL_H)
-    z = int(position[2]/CELL_D)
-    for xi in (x-2, x-1, x, x+1, x+2):
-        if xi < CELL_WN and xi >= 0:
-            for yi in (y-2, y-1, y, y+1, y+2):
-                if yi < CELL_HN and yi >= 0:
-                    for zi in (z-2, z-1, z, z+1, z+2):
-                        if zi < CELL_DN and zi >= 0:
-                            stamp = max(0, 3 - abs(x - xi) - abs(y - yi) - abs(z - zi))
-                            if stamp != 0:
-                                FIELD_DENSITY_GRID[xi][yi][zi] += stamp
+#def density_stamp_grid(position):
+#    x = int(position[0]/CELL_W)
+#    y = int(position[1]/CELL_H)
+#    z = int(position[2]/CELL_D)
+#    for xi in (x-2, x-1, x, x+1, x+2):
+#        if xi < CELL_WN and xi >= 0:
+#            for yi in (y-2, y-1, y, y+1, y+2):
+#                if yi < CELL_HN and yi >= 0:
+#                    for zi in (z-2, z-1, z, z+1, z+2):
+#                        if zi < CELL_DN and zi >= 0:
+#                            stamp = max(0, 3 - abs(x - xi) - abs(y - yi) - abs(z - zi))
+#                            if stamp != 0:
+#                                FIELD_DENSITY_GRID[xi][yi][zi] += stamp
 
-def density_vis(string, intensity):
+# every particle makes a stamp at each move
+def density_decoder(string):
     xs = False
     ys = False
     zs = False
@@ -183,35 +197,145 @@ def density_vis(string, intensity):
             x += letter
         if letter == "x":
             xs = True
-    position = (int(x)*CELL_W, int(y)*CELL_H, int(z)*CELL_D)
-    Entity(model = "sphere", position = position, scale = 0.01*intensity/20, color = color.color(200, 0.9, 1 - intensity/40))
+    cell_index = (int(x), int(y), int(z))
+    return cell_index
+
+def density_encoder(vector):
+    key = "x"+str(vector[0])+"y"+str(vector[1])+"z"+str(vector[2])
+    return key
 
 def density_stamp(position):
     x = int(position[0]/CELL_W)
     y = int(position[1]/CELL_H)
     z = int(position[2]/CELL_D)
-    for xi in (x-2, x-1, x, x+1, x+2):
+    for xi in range(x-density_expansion, x+density_expansion):
         if xi < CELL_WN and xi >= 0:
-            for yi in (y-2, y-1, y, y+1, y+2):
+            for yi in range(y - density_expansion, y + density_expansion):
                 if yi < CELL_HN and yi >= 0:
-                    for zi in (z-2, z-1, z, z+1, z+2):
+                    for zi in range(z - density_expansion, z + density_expansion):
                         if zi < CELL_DN and zi >= 0:
-                            key = "x"+str(xi)+"y"+str(yi)+"z"+str(zi)
-                            stamp = max(0, 3 - abs(x - xi) - abs(y - yi) - abs(z - zi))
+                            key = density_encoder((xi, yi, zi))
+                            stamp_raw = density_max - int((abs(x-xi)*1.2)**1.5+(abs(y-yi)*1.2)**1.5+(abs(z-zi)*1.2)**1.5)
+                            stamp = max(0, stamp_raw)
+                            #stamp = max(0, 3 - abs(x - xi) - abs(y - yi) - abs(z - zi))
                             if stamp != 0:
                                 if key in FIELD_DENSITY.keys():
-                                    FIELD_DENSITY[key] += max(0, 3 - abs(x - xi) - abs(y - yi) - abs(z - zi))
+                                    FIELD_DENSITY[key] += stamp
                                 else:
-                                    FIELD_DENSITY[key] = max(0, 3 - abs(x - xi) - abs(y - yi) - abs(z - zi))
+                                    FIELD_DENSITY[key] = stamp
+    for key in FIELD_DENSITY.keys():
+        if FIELD_DENSITY[key] >= density_threshold:
+            DENSITY_MAP.append(density_decoder(key))
+
+# one-time button produces density visualization
+def density_vis(string, intensity):
+    position = (CELL_W*density_decoder(string)[0], CELL_H*density_decoder(string)[1], CELL_D*density_decoder(string)[2])
+    if intensity < density_threshold:
+        Entity(model = "sphere", position = position, scale = (intensity/10000000000)**0.3,
+           color = color.color(280, 0.6, 3**(-intensity/700)))
+    else:
+        Entity(model = "sphere", position = position, scale = (intensity/10000000000)**0.3,
+           color = color.color(200, 0.9, 3**(-intensity/700)))
+    #Mesh(vertices=[position], mode="point", colors = color.color(200, 0.9, 1 - intensity/40))
+
+# one-time button produces density profiler
+def density_profiler():
+    xmax = 0
+    xmin = 576
+    ymax = 0
+    ymin = 576
+    zmax = 0
+    zmin = 576
+    DENSITY_PROFILE = []
+    print("yes")
+    for i in DENSITY_MAP:
+        xmax = max(xmax, i[0])
+        xmin = min(xmin, i[0])
+        ymax = max(ymax, i[1])
+        ymin = min(ymin, i[1])
+        zmax = max(zmax, i[2])
+        zmin = min(zmin, i[2])
+
+    # screen along x direction
+    for yi in range(ymin, ymax+1, 5):
+        for zi in range(zmin, zmax+1):
+            start = False
+            value = 0
+            for xi in range(xmin, xmax+1):
+                if start == False and (xi, yi, zi) in DENSITY_MAP:
+                    start = True
+                    #value += FIELD_DENSITY["x"+str(xi)+"y"+str(yi)+"z"+str(zi)]
+                    DENSITY_PROFILE.append((xi, yi, zi))
+                    continue
+
+                if start == True and (xi, yi, zi) in DENSITY_MAP:
+                    #value += FIELD_DENSITY["x"+str(xi)+"y"+str(yi)+"z"+str(zi)]
+                    continue
+
+                if start == True and (xi, yi, zi) not in DENSITY_MAP:
+                    start = False
+                    #mid_value = value/2
+                    #pass_mid = False
+                    #x = xi
+                    DENSITY_PROFILE.append((xi-1, yi, zi))
+                    #while pass_mid == False:
+                    #    x -= 1
+                    #    mid_value -= FIELD_DENSITY["x" + str(x) + "y" + str(yi) + "z" + str(zi)]
+                    #    if mid_value < 0:
+                    #        pass_mid = True
+                    #        DENSITY_PROFILE.append(((CELL_W*(x-math.atan(value)), CELL_H*yi, CELL_D*zi),
+                    #                                 (CELL_W*(x+math.atan(value)), CELL_H*yi, CELL_D*zi)))
+                    #value = 0
+                    continue
+
+    # screen along z direction
+    for yi in range(ymin, ymax+1, 5):
+        for xi in range(xmin, xmax+1):
+            start = False
+            value = 0
+            for zi in range(zmin, zmax+1):
+                if start == False and (xi, yi, zi) in DENSITY_MAP:
+                    start = True
+                    #value += FIELD_DENSITY["x"+str(xi)+"y"+str(yi)+"z"+str(zi)]
+                    DENSITY_PROFILE.append((xi, yi, zi))
+                    continue
+
+                if start == True and (xi, yi, zi) in DENSITY_MAP:
+                    #value += FIELD_DENSITY["x"+str(xi)+"y"+str(yi)+"z"+str(zi)]
+                    continue
+
+                if start == True and (xi, yi, zi) not in DENSITY_MAP:
+                    start = False
+                    #mid_value = value/2
+                    #pass_mid = False
+                    #z = zi
+                    DENSITY_PROFILE.append((xi, yi, zi-1))
+                    #while pass_mid == False:
+                    #    z -= 1
+                    #    mid_value -= FIELD_DENSITY["x" + str(xi) + "y" + str(yi) + "z" + str(z)]
+                    #    if mid_value < 0:
+                    #        pass_mid = True
+                    #        DENSITY_PROFILE.append(((CELL_W*xi, CELL_H*yi, CELL_D*(z-math.atan(value))),
+                    #                                 (CELL_W*xi, CELL_H*yi, CELL_D*(z+math.atan(value)))))
+                    #
+                    #value = 0
+                    continue
+
+    for i in DENSITY_PROFILE:
+        center = (CELL_W*i[0], CELL_H*i[1], CELL_D*i[2])
+        Entity(model = "cube", position = center, scale = 0.001)
+        #Entity(model = "cube", position = i[0], scale = 0.001)
+        #Entity(model = "cube", position = i[1], scale = 0.001)
 
 #-----field density-----
+
 
 #-----acceleration vector fields-----
 class DrawAccField(Entity):
     def __init__(self, center, direction):
         self.direction = Vec3(direction)
         self.center = Vec3(center)
-        self.y_vec = Vec3(0,direction[1],0)
+        #self.y_vec = Vec3(0,direction[1],0)
 
         super().__init__(model = Mesh(vertices = [self.center, self.center + self.direction], mode = "line", thickness = 2),
             color = color_hsv(280,1,0.8)
@@ -258,8 +382,20 @@ def _rotation_field(p_position, l_position, direction):
     projection = np.dot(p_to_l, direction) * direction / np.dot(direction, direction)
     rotation = np.cross(p_to_l - projection, direction)
     return rotation
-
 #-----velocity vector fields-----
+
+
+#-----attractor fields-----
+class DrawAttField(Entity):
+    def __init__(self, center, direction):
+        self.direction = Vec3(direction)
+        self.center = Vec3(center)
+        #self.y_vec = Vec3(0,direction[1],0)
+
+        super().__init__(model = Mesh(vertices = [self.center, self.center + self.direction], mode = "line", thickness = 2),
+            color = color_hsv(220,1,0.8)
+        )
+#-----attractor fields-----
 
 #-----particles-----
 class BaseParticle(Entity):
@@ -321,6 +457,7 @@ class Particle(Entity):
         if self.within_range == False:
             return None
 
+
         ### apply v field
         # find closest v_field to particle
         v_line = False
@@ -328,12 +465,11 @@ class Particle(Entity):
 
         for l in VEL_FIELD_LINES:
             distance = magnitude(l.center - self.position)
-            if distance < 0.25:
+            if distance < max_distance:
                if distance < closest_vdis:
                    closest_vdis = distance
                    v_line = True
                    closest_vf = l
-
 
         if v_line == False:
             self.within_range = False
@@ -341,38 +477,49 @@ class Particle(Entity):
 
         v_attractor = closest_vf.center - self.position
 
-        ### apply a field
+
+        ### apply acc field
         for l in ACC_FIELD_LINES:
             n = 0
             distance = magnitude(l.center-self.position)
-            if distance < 0.25:
+            if distance < max_distance:
                 n += 1
                 if n == 2:
                     break
-                self.velocity = tuple(self.velocity[i] + a_field_factor_*l.direction[i]/(magnitude(l.direction)) for i in range(3))
-               # self.velocity = Vec3(tuple(self.velocity[i] + a_field_factor_ * l.direction[i]/(magnitude(l.direction))
-                #                           for i in range(3)))
+                self.velocity = tuple(self.velocity[i] + acc_field_factor_*l.direction[i]/(magnitude(l.direction)) for i in (0,1,2))
+               # self.velocity = Vec3(tuple(self.velocity[i] + acc_field_factor_ * l.direction[i]/(magnitude(l.direction))
+                #                           for i in (0,1,2)))
 
         rot = rotation_field(self.position, closest_vf.center, closest_vf.direction) #rot is a tuple not Vec3
-        ## apply vector fields and decay_ to velocity
+
+
+        ### apply att field
+        for l in ATT_FIELD_LINES:
+            distance = magnitude(l.center - self.position)
+            direction = l.center - self.position
+            if distance < max_distance:
+                self.velocity = tuple(self.velocity[i] + direction[i] * att_field_factor_ for i in (0,1,2))
+
+
+        ### apply vector fields and decay_ to velocity
         self.velocity = tuple(v_preserve_factor_*self.velocity[i] # last velocity
                                    + v_attract_factor_*v_attractor[i] # attraction to draw field
                                    + v_rotation_factor_*rot[i] # rotation field v_rotation_factor_
                                    + v_field_factor_*closest_vf.direction[i] # v field intensity
                                    #v_field_factor_*math.exp(-closest_vdis)*closest_vf.direction[i]/magnitude(closest_vf.direction) # v field intensity
                                    + gravity_field(self.position)[i] # gravity
-                                      for i in range(3))
+                                      for i in (0,1,2))
 
 
         #dprint(rotation_field(self.position, closest_vf.center, closest_vf.direction))
         self.position += Vec3(tuple(time_scale_*self.velocity[i] # time scale
                                     + p_random_factor_ * (random.random() - 0.5) # positional randomness
                                     + 0*rot[i]
-                                    for i in range(3)))
+                                    for i in (0,1,2)))
 
         density_stamp(self.position)
 
-        self.velocity = tuple(self.velocity[i]*decay_ for i in range(3))
+        self.velocity = tuple(self.velocity[i]*decay_ for i in (0,1,2))
         self.tail_list.append(self.position)
 
         if len(self.tail_list) < 2:
@@ -411,9 +558,9 @@ class ParticleUpdater(Entity):
             if new_line_segment == None:
                 dead_particles.append(particle)
                 continue
-            if len(new_line_segment) == 1:
+            elif len(new_line_segment) == 1:
                 continue
-            if (self.skip_count % 5 != 0):
+            elif (self.skip_count % 5 != 0):
                 continue
             vertices.append(new_line_segment[0]+Vec3(random.random()*0.02,random.random()*0.02,random.random()*0.02))
             vertices.append(new_line_segment[1]+Vec3(random.random()*0.02,random.random()*0.02,random.random()*0.02))
@@ -514,6 +661,9 @@ class Controller(Entity):
     if key == "6":
         for key in FIELD_DENSITY.keys():
             density_vis(key, FIELD_DENSITY[key])
+
+    if key == "7":
+        density_profiler()
     
     #change fov
     if held_keys["a"]:
@@ -573,7 +723,7 @@ class Controller(Entity):
             mouse_old_position_ = mouse_position
             drawling_line_ = True
         else:
-            direction = Vec3(tuple(mouse_position[i] - mouse_old_position_[i] + (random.random()-0.5)*0.2 for i in range(3)))
+            direction = Vec3(tuple(mouse_position[i] - mouse_old_position_[i] + (random.random()-0.5)*0.2 for i in (0,1,2)))
             l = DrawAccField(mouse_old_position_, direction)
             mouse_old_position_ = mouse_position
             if magnitude(direction) > 0.01:
@@ -585,14 +735,26 @@ class Controller(Entity):
             mouse_old_position_ = mouse_position
             drawling_line_ = True
         else:
-            direction = Vec3(tuple(mouse_position[i] - mouse_old_position_[i] for i in range(3)))
+            direction = Vec3(tuple(mouse_position[i] - mouse_old_position_[i] for i in (0,1,2)))
             l = DrawVelField(mouse_old_position_, direction)
             mouse_old_position_ = mouse_position
             if magnitude(direction) > 0.01:
                 VEL_FIELD_LINES.append(l)
 
+    if held_keys["c"]:
+        mouse_position = mouse.world_point
+        if drawling_line_ == False:
+            mouse_old_position_ = mouse_position
+            drawling_line_ = True
+        else:
+            direction = Vec3(tuple(mouse_position[i] - mouse_old_position_[i] for i in (0,1,2)))
+            l = DrawAttField(mouse_old_position_, direction)
+            mouse_old_position_ = mouse_position
+            if magnitude(direction) > 0.01:
+                ATT_FIELD_LINES.append(l)
+
     #if key == "c":
-    if held_keys["z"] == 0 and held_keys["x"] == 0:
+    if held_keys["z"] == 0 and held_keys["x"] == 0 and held_keys["c"] == 0:
         drawling_line_ = False
 
     if key == 'left mouse down':
