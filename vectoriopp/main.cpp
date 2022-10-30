@@ -21,6 +21,7 @@ using namespace glm;
 
 #include "ParticleSystem.h"
 #include "ColoredTriangles.h"
+#include "LineRenderer.h"
 
 
 int main( void )
@@ -58,7 +59,7 @@ int main( void )
   // Ensure we can capture the escape key being pressed below
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
   // Hide the mouse and enable unlimited mouvement
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   
   // Set the mouse at the center of the screen
   glfwPollEvents();
@@ -79,7 +80,14 @@ int main( void )
     1.0f, -1.0f, 0.0f,
     0.0f,  1.0f, 0.0f,
   };
+  GLfloat g_sample_line_data[] = {
+    0.0f, 0.0f, 0.0f,
+    0.0f,1.0f, 0.0f,
+    0.0f,0.0f,0.0f,
+    0.0f,0.0f,1.0f
+  };
   CameraFacingTriangles drawPlane(&g_single_triangle_data[0], 9);
+  LineRenderer drawLines(&g_sample_line_data[0], 9);
   double lastTime = glfwGetTime();
   do {
     // Clear the screen
@@ -90,6 +98,7 @@ int main( void )
 
     particleSystem.update(delta);
     particleSystem.render();
+    drawLines.render();
     drawPlane.render();
 
     
