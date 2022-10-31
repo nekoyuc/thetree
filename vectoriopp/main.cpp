@@ -84,10 +84,12 @@ int main( void )
     0.0f, 0.0f, 0.0f,
     0.0f,1.0f, 0.0f,
     0.0f,0.0f,0.0f,
-    0.0f,0.0f,1.0f
+    0.0f,0.0f,1.0f,
+    0.0f,0.0f,0.0f,
+    1.0f,0.0f,0.0f,
   };
   CameraFacingTriangles drawPlane(&g_single_triangle_data[0], 9);
-  LineRenderer drawLines(&g_sample_line_data[0], 9);
+  LineRenderer drawLines(&g_sample_line_data[0], 18);
   double lastTime = glfwGetTime();
   do {
     // Clear the screen
@@ -99,7 +101,9 @@ int main( void )
     particleSystem.update(delta);
     particleSystem.render();
     drawLines.render();
+    glDisable(GL_DEPTH_TEST);
     drawPlane.render();
+    glEnable(GL_DEPTH_TEST);
 
     
     // Swap buffers

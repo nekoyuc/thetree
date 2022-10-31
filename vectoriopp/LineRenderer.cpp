@@ -64,7 +64,7 @@ void LineRenderer::render() {
     (void*)0            // array buffer offset
   );
   glLineWidth(2.0);
-  glDrawArrays(GL_LINES, 0, 3); // 3 indices starting at 0 -> 1 triangle
+  glDrawArrays(GL_LINES, 0, mNumVertices/3); // 3 indices starting at 0 -> 1 triangle
   glDisableVertexAttribArray(0);
 }
 

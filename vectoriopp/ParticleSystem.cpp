@@ -121,7 +121,7 @@ void ParticleSystem::update(double delta) {
   for(int i=0; i<newparticles; i++){
     int particleIndex = findUnusedParticle();
     mParticles[particleIndex].life = 5.0f; // This particle will live 5 seconds.
-    mParticles[particleIndex].pos = glm::vec3(0,0,-20.0f);
+    mParticles[particleIndex].pos = glm::vec3(0,0.0,0.0f);
     float spread = 1.5f;
     glm::vec3 maindir = glm::vec3(0.0f, 10.0f, 0.0f);
     // Very bad way to generate a random direction; 
@@ -137,9 +137,9 @@ void ParticleSystem::update(double delta) {
     mParticles[particleIndex].r = rand() % 256;
     mParticles[particleIndex].g = rand() % 256;
     mParticles[particleIndex].b = rand() % 256;
-    mParticles[particleIndex].a = (rand() % 256) / 3;
+    mParticles[particleIndex].a = (rand() % 256) / 2;
     
-    mParticles[particleIndex].size = (rand()%1000)/2000.0f + 0.1f;
+    mParticles[particleIndex].size = (rand()%1000)/50000.0f + 0.1f;
   }
   // Simulate all particles
   mParticlesCount = 0;
@@ -200,8 +200,11 @@ void ParticleSystem::render() {
   glUniform1i(mTextureId, 0);
   
   // Same as the billboards tutorial
-  glUniform3f(mCameraRightWorldspaceId, ViewMatrix[0][0], ViewMatrix[1][0], ViewMatrix[2][0]);
-  glUniform3f(mCameraUpWorldspaceId   , ViewMatrix[0][1], ViewMatrix[1][1], ViewMatrix[2][1]);
+  auto cameraPosition = getCameraPosition();
+  auto cameraRight = glm::vec3(ViewMatrix[0][0],ViewMatrix[1][0],ViewMatrix[2][0]);
+  auto cameraUp = (glm::vec3(ViewMatrix[0][1],ViewMatrix[1][1], ViewMatrix[2][1]));
+  glUniform3f(mCameraRightWorldspaceId, cameraRight[0], cameraRight[1], cameraRight[2]);
+  glUniform3f(mCameraUpWorldspaceId, cameraUp[0], cameraUp[1], cameraUp[2]);
   
   glUniformMatrix4fv(mViewProjMatrixId, 1, GL_FALSE, &ViewProjectionMatrix[0][0]);
   
