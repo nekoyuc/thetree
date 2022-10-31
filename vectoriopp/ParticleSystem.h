@@ -5,7 +5,7 @@
 
 class ParticleSystem {
 public:
-    ParticleSystem() = default;
+    ParticleSystem();
     ~ParticleSystem();
 
     struct Particle {
@@ -15,11 +15,10 @@ public:
       float life;
       float cameraDistance;
       bool operator<(const Particle& that) const {
-  	return this->cameraDistance > that.cameraDistance;
+      	return this->cameraDistance > that.cameraDistance;
       }
     };
 
-    void init();
     void update(double delta);
     void render();
 
@@ -43,4 +42,5 @@ private:
 
     int findUnusedParticle();
     void sortParticles();
+    void init();
 };

@@ -2,13 +2,13 @@
 
 class ColoredTriangles {
 public:
-  ColoredTriangles(GLfloat* vertexBufferData, int numVertices);
+  ColoredTriangles(GLfloat* vertexBufferData, int numElements);
   virtual ~ColoredTriangles();
   void render();
   virtual glm::mat4 getMVPMatrix();
 private:
   GLfloat* mVertexBufferData;
-  int mNumVertices;
+  int mNumElements;
 
   GLuint mVertexArrayId;
   GLuint mProgramId;

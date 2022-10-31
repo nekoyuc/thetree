@@ -20,15 +20,15 @@ static const GLfloat g_vertex_buffer_data[] = {
   0.0f,  1.0f, 0.0f,
 };
 
-ColoredTriangles::ColoredTriangles(GLfloat* vertexBufferData, int numVertices) :
-  mVertexBufferData(vertexBufferData), mNumVertices(numVertices) {
+ColoredTriangles::ColoredTriangles(GLfloat* vertexBufferData, int numElements) :
+  mVertexBufferData(vertexBufferData), mNumElements(numElements) {
   glGenVertexArrays(1, &mVertexArrayId);
   glBindVertexArray(mVertexArrayId);
   // Create and compile our GLSL program from the shaders
   mProgramId = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );
   glGenBuffers(1, &mVertexBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-  glBufferData(GL_ARRAY_BUFFER, mNumVertices*sizeof(GLfloat), mVertexBufferData, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, mNumElements*sizeof(GLfloat), mVertexBufferData, GL_STATIC_DRAW);
   mViewProjMatrixId = glGetUniformLocation(mProgramId, "VP");
 }
 
@@ -70,8 +70,8 @@ void ColoredTriangles::render() {
   glDisableVertexAttribArray(0);
 }
 
-CameraFacingTriangles::CameraFacingTriangles(GLfloat* vertexBufferData, int numVertices) :
-  ColoredTriangles(vertexBufferData, numVertices) {
+CameraFacingTriangles::CameraFacingTriangles(GLfloat* vertexBufferData, int numElements) :
+  ColoredTriangles(vertexBufferData, numElements) {
 }
 
 glm::mat4 CameraFacingTriangles::getMVPMatrix() {

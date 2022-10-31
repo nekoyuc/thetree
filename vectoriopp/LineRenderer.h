@@ -1,14 +1,23 @@
 #pragma once
+#include <GL/glew.h>
+
+#include <glm/glm.hpp>
+
+#define NUM_LINES 10000
 
 class LineRenderer {
 public:
-  LineRenderer(GLfloat* vertexBufferData, int numVertices);
+  LineRenderer();
   virtual ~LineRenderer();
+  LineRenderer(const LineRenderer& other) = delete;
+
+  void addLine(float x1, float y1, float z1, float x2, float y2, float z2);
+
   void render();
   virtual glm::mat4 getMVPMatrix();
 private:
-  GLfloat* mVertexBufferData;
-  int mNumVertices;
+  GLfloat mVertexBufferData[NUM_LINES*6];
+  int mNumVertices = 0;
 
   GLuint mVertexArrayId;
   GLuint mProgramId;

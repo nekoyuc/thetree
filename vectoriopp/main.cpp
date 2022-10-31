@@ -22,6 +22,7 @@ using namespace glm;
 #include "ParticleSystem.h"
 #include "ColoredTriangles.h"
 #include "LineRenderer.h"
+#include "LineController.h"
 
 int main()
 {
@@ -74,8 +75,8 @@ int main()
   glDepthFunc(GL_LESS);
 
   ParticleSystem particleSystem;
-  particleSystem.init();
-  GLfloat g_single_triangle_data[] = { 
+
+  GLfloat g_single_triangle_data[] = {
     -1.0f, -1.0f, 0.0f,
     1.0f, -1.0f, 0.0f,
     0.0f,  1.0f, 0.0f,
@@ -89,7 +90,15 @@ int main()
     1.0f,0.0f,0.0f,
   };
   CameraFacingTriangles drawPlane(&g_single_triangle_data[0], 9);
-  LineRenderer drawLines(&g_sample_line_data[0], 18);
+
+  LineRenderer drawLines;
+  drawLines.addLine(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+  drawLines.addLine(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+  drawLines.addLine(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+  LineController lineController(&drawLines);
+
+  
   double lastTime = glfwGetTime();
   do {
     // Clear the screen
@@ -100,8 +109,11 @@ int main()
 
     particleSystem.update(delta);
     particleSystem.render();
-    drawLines.render();
+
+    lineController.update(window);
     glDisable(GL_DEPTH_TEST);
+
+    drawLines.render();
     drawPlane.render();
     glEnable(GL_DEPTH_TEST);
 
@@ -109,6 +121,8 @@ int main()
     // Swap buffers
     glfwSwapBuffers(window);
     glfwPollEvents();
+    
+    computeMatricesFromInputs();
   } while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 		   glfwWindowShouldClose(window) == 0 );
 

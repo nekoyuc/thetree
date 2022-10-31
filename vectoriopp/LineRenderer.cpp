@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <GL/glew.h>
 
 // Include GLFW
@@ -20,15 +21,14 @@ static const GLfloat g_vertex_buffer_data[] = {
   0.0f,  1.0f, 0.0f,
 };
 
-LineRenderer::LineRenderer(GLfloat* vertexBufferData, int numVertices) :
-  mVertexBufferData(vertexBufferData), mNumVertices(numVertices) {
+LineRenderer::LineRenderer() {
   glGenVertexArrays(1, &mVertexArrayId);
   glBindVertexArray(mVertexArrayId);
   // Create and compile our GLSL program from the shaders
   mProgramId = LoadShaders( "SimpleVertexShader.vertexshader", "LineFragmentShader.fragmentshader" );
   glGenBuffers(1, &mVertexBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
-  glBufferData(GL_ARRAY_BUFFER, mNumVertices*sizeof(GLfloat), mVertexBufferData, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, mNumVertices * sizeof(GLfloat), mVertexBufferData, GL_STREAM_DRAW);
   mViewProjMatrixId = glGetUniformLocation(mProgramId, "VP");
 }
 
@@ -40,6 +40,24 @@ LineRenderer::~LineRenderer() {
 
 glm::mat4 LineRenderer::getMVPMatrix() {
   return getProjectionMatrix()*getViewMatrix();
+}
+
+void LineRenderer::addLine(float x1, float y1, float z1, float x2, float y2, float z2) {
+    if (mNumVertices+6 > NUM_LINES * 6) {
+        printf("Out of space for lines \n");
+        return;
+    }
+
+    mVertexBufferData[mNumVertices] = x1;
+    mVertexBufferData[mNumVertices+1] = y1;
+    mVertexBufferData[mNumVertices+2] = z1;
+    mVertexBufferData[mNumVertices+3] = x2;
+    mVertexBufferData[mNumVertices+4] = y2;
+    mVertexBufferData[mNumVertices+5] = z2;
+    mNumVertices += 6;
+
+    glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, mNumVertices * sizeof(GLfloat), mVertexBufferData, GL_STREAM_DRAW);
 }
 
 void LineRenderer::render() {
