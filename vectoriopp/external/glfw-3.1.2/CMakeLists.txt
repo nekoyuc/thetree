@@ -39,7 +39,7 @@ else()
 endif()
 
 if (UNIX AND NOT APPLE)
-    option(GLFW_USE_WAYLAND "Use Wayland for context creation (implies EGL as well)" OFF)
+    option(GLFW_USE_WAYLAND "Use Wayland for context creation (implies EGL as well)" ON)
     option(GLFW_USE_MIR     "Use Mir for context creation (implies EGL as well)" OFF)
 endif()
 
@@ -56,6 +56,8 @@ if (GLFW_USE_WAYLAND)
 elseif (GLFW_USE_MIR)
     set(GLFW_USE_EGL ON)
 endif()
+set(GLFW_USE_EGL ON)
+
 
 set(CMAKE_MODULE_PATH "${GLFW_SOURCE_DIR}/CMake/modules")
 
@@ -194,8 +196,8 @@ elseif (UNIX)
         set(_GLFW_MIR 1)
         message(STATUS "Using Mir for window creation")
     else()
-        set(_GLFW_X11 1)
-        message(STATUS "Using X11 for window creation")
+        set(_GLFW_WAYLAND 1)
+        message(STATUS "Using WAYLAND for window creation")
     endif()
 
     if (GLFW_USE_EGL)

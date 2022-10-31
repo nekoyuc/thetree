@@ -23,8 +23,7 @@ using namespace glm;
 #include "ColoredTriangles.h"
 #include "LineRenderer.h"
 
-
-int main( void )
+int main()
 {
   // Initialise GLFW
   if( !glfwInit() ) {
@@ -32,6 +31,7 @@ int main( void )
     getchar();
     return -1;
   }
+
   glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_RESIZABLE,GL_FALSE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
