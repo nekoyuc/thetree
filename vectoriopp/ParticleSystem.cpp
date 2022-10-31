@@ -114,9 +114,9 @@ void ParticleSystem::update(double delta) {
   // Generate 10 new particule each millisecond,
   // but limit this to 16 ms (60 fps), or if you have 1 long frame (1sec),
   // newparticles will be huge and the next frame even longer.
-  int newparticles = (int)(delta*1000.0);
-  if (newparticles > (int)(0.016f*1000.0))
-    newparticles = (int)(0.016f*1000.0);
+  int newparticles = (int)(delta*20000.0);
+  if (newparticles > (int)(0.016f*20000.0))
+    newparticles = (int)(0.016f*20000.0);
 		
   for(int i=0; i<newparticles; i++){
     int particleIndex = findUnusedParticle();
