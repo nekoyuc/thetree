@@ -101,7 +101,7 @@ void ParticleSystem::init() {
   glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 }
 
-void ParticleSystem::update(double delta) {
+void ParticleSystem::update(double delta, Field* field) {
   glm::mat4 ProjectionMatrix = getProjectionMatrix();
   glm::mat4 ViewMatrix = getViewMatrix();
   
@@ -117,9 +117,10 @@ void ParticleSystem::update(double delta) {
   // Generate 10 new particule each millisecond,
   // but limit this to 16 ms (60 fps), or if you have 1 long frame (1sec),
   // newparticles will be huge and the next frame even longer.
-  int newparticles = (int)(delta*1500.0);
-  if (newparticles > (int)(0.016f*1500.0))
-    newparticles = (int)(0.016f*1500.0);
+  const int newParticles = 3000;
+  int newparticles = (int)(delta*newParticles);
+  if (newparticles > (int)(0.016f*newParticles))
+    newparticles = (int)(0.016f*newParticles);
 		
   for(int i=0; i<newparticles; i++){
     int particleIndex = findUnusedParticle();
@@ -154,6 +155,8 @@ void ParticleSystem::update(double delta) {
       if (p.life > 0.0f){
 	// Simulate simple physics : gravity only, no collisions
 	p.speed += glm::vec3(0.0f,-9.81f, 0.0f) * (float)delta * 0.5f;
+	p.speed *= 1.0; // super slo mo
+	p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
 	p.pos += p.speed * (float)delta;
 	p.cameraDistance = glm::length2( p.pos - CameraPosition );
 	//mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
@@ -205,7 +208,7 @@ void ParticleSystem::render() {
   // Same as the billboards tutorial
   auto cameraPosition = getCameraPosition();
   auto cameraRight = glm::vec3(ViewMatrix[0][0],ViewMatrix[1][0],ViewMatrix[2][0]);
-  auto cameraUp = (glm::vec3(ViewMatrix[0][1],ViewMatrix[1][1], ViewMatrix[2][1]));
+  auto cameraUp = glm::vec3(ViewMatrix[0][1],ViewMatrix[1][1], ViewMatrix[2][1]);
   glUniform3f(mCameraRightWorldspaceId, cameraRight[0], cameraRight[1], cameraRight[2]);
   glUniform3f(mCameraUpWorldspaceId, cameraUp[0], cameraUp[1], cameraUp[2]);
   

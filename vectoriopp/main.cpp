@@ -24,6 +24,28 @@ using namespace glm;
 #include "LineRenderer.h"
 #include "LineController.h"
 
+GLfloat g_single_triangle_data[] = {
+  -1.0f, -1.0f, 0.0f,
+  1.0f, -1.0f, 0.0f,
+  0.0f,  1.0f, 0.0f,
+};
+GLfloat g_sample_line_data[] = {
+  0.0f, 0.0f, 0.0f,
+  0.0f,1.0f, 0.0f,
+  0.0f,0.0f,0.0f,
+  0.0f,0.0f,1.0f,
+  0.0f,0.0f,0.0f,
+  1.0f,0.0f,0.0f,
+};
+GLfloat plane_data[] = {
+-1.0f, -1.0f, 0.0f,
+1.0f, -1.0f, 0.0f,
+1.0f,  1.0f, 0.0f,
+-1.0f, -1.0f, 0.0f,
+1.0f, 1.0f, 0.0f,
+-1.0f, 1.0f, 0.0f
+};
+
 int main()
 {
   // Initialise GLFW
@@ -76,27 +98,29 @@ int main()
 
   ParticleSystem particleSystem;
 
-  GLfloat g_single_triangle_data[] = {
-    -1.0f, -1.0f, 0.0f,
-    1.0f, -1.0f, 0.0f,
-    0.0f,  1.0f, 0.0f,
+
+  CameraFacingTriangles drawPlane(&plane_data[0], 18);
+  drawPlane.mColor = glm::vec4(0.3, 0.3, 0.8, 0.4);
+
+  struct Plane : public ColoredTriangles {
+      glm::mat4 mModelMatrix = glm::mat4(1.0f);
+      Plane() : ColoredTriangles(&plane_data[0], 18) {
+          mModelMatrix = glm::rotate(mModelMatrix, (float)(M_PI / 2.0f), glm::vec3(1, 0, 0));
+          mColor = glm::vec4(0.9, 0.732, 0.842739, 0.97);
+      }
+      glm::mat4 getMVPMatrix() override {
+          return getProjectionMatrix() * getViewMatrix() * mModelMatrix;
+      }
   };
-  GLfloat g_sample_line_data[] = {
-    0.0f, 0.0f, 0.0f,
-    0.0f,1.0f, 0.0f,
-    0.0f,0.0f,0.0f,
-    0.0f,0.0f,1.0f,
-    0.0f,0.0f,0.0f,
-    1.0f,0.0f,0.0f,
-  };
-  CameraFacingTriangles drawPlane(&g_single_triangle_data[0], 9);
+  Plane basePlane;
 
   LineRenderer drawLines;
   drawLines.addLine(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
   drawLines.addLine(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
   drawLines.addLine(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-  LineController lineController(&drawLines);
+  SketchField sketchField;
+  LineController lineController(&drawLines, &sketchField);
 
   
   double lastTime = glfwGetTime();
@@ -107,15 +131,17 @@ int main()
     double delta = currentTime - lastTime;
     lastTime = currentTime;
 
-    particleSystem.update(delta);
+    basePlane.render();
+    glDisable(GL_DEPTH_TEST);
+
+    particleSystem.update(delta, &sketchField);
     particleSystem.render();
+    glEnable(GL_DEPTH_TEST);
 
     lineController.update(window);
-    glDisable(GL_DEPTH_TEST);
 
     drawLines.render();
     drawPlane.render();
-    glEnable(GL_DEPTH_TEST);
 
     
     // Swap buffers

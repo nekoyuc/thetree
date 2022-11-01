@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "SketchField.h"
 
 #define MAX_PARTICLES 100000
 
@@ -19,7 +20,7 @@ public:
       }
     };
 
-    void update(double delta);
+    void update(double delta, Field* field);
     void render();
 
 private:

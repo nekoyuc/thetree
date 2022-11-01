@@ -6,6 +6,8 @@ public:
   virtual ~ColoredTriangles();
   void render();
   virtual glm::mat4 getMVPMatrix();
+
+  glm::vec4 mColor = glm::vec4(0.0, 0.8, 0.2, 0.4);
 private:
   GLfloat* mVertexBufferData;
   int mNumElements;
@@ -14,6 +16,7 @@ private:
   GLuint mProgramId;
   GLuint mVertexBuffer;
   GLuint mViewProjMatrixId;
+  GLuint mColorId;
 
   glm::mat4 mModelMatrix;
   glm::vec3 mPosition = glm::vec3(0,0,5);

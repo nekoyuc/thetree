@@ -30,6 +30,7 @@ ColoredTriangles::ColoredTriangles(GLfloat* vertexBufferData, int numElements) :
   glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
   glBufferData(GL_ARRAY_BUFFER, mNumElements*sizeof(GLfloat), mVertexBufferData, GL_STATIC_DRAW);
   mViewProjMatrixId = glGetUniformLocation(mProgramId, "VP");
+  mColorId = glGetUniformLocation(mProgramId, "inputColor");
 }
 
 ColoredTriangles::~ColoredTriangles() {
@@ -54,6 +55,7 @@ void ColoredTriangles::render() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glUseProgram(mProgramId);
 
+  glUniform4f(mColorId, mColor[0], mColor[1], mColor[2], mColor[3]);
   glUniformMatrix4fv(mViewProjMatrixId, 1, GL_FALSE, &ViewProjectionMatrix[0][0]);
   // 1rst attribute buffer : vertices
   glEnableVertexAttribArray(0);
@@ -66,7 +68,7 @@ void ColoredTriangles::render() {
     0,                  // stride
     (void*)0            // array buffer offset
   );
-  glDrawArrays(GL_TRIANGLES, 0, 3); // 3 indices starting at 0 -> 1 triangle
+  glDrawArrays(GL_TRIANGLES, 0, mNumElements/3); // 3 indices starting at 0 -> 1 triangle
   glDisableVertexAttribArray(0);
 }
 

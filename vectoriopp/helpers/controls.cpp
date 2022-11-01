@@ -60,7 +60,7 @@ void computeMatricesFromInputs(){
 	glfwGetCursorPos(window, &xpos, &ypos);
 
 	// Reset mouse position for next frame
-	if (glfwGetMouseButton (window, GLFW_MOUSE_BUTTON_2)) {
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2)) {
 	  mouseSpeed = 0.005;
 	  //	  glfwSetCursorPos(window, 1024/2, 768/2);
 	} else {

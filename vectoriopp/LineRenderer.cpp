@@ -43,17 +43,17 @@ glm::mat4 LineRenderer::getMVPMatrix() {
 }
 
 void LineRenderer::addLine(float x1, float y1, float z1, float x2, float y2, float z2) {
-    if (mNumVertices+6 > NUM_LINES * 6) {
+    if (mNumVertices + 6 > NUM_LINES * 6) {
         printf("Out of space for lines \n");
         return;
     }
 
     mVertexBufferData[mNumVertices] = x1;
-    mVertexBufferData[mNumVertices+1] = y1;
-    mVertexBufferData[mNumVertices+2] = z1;
-    mVertexBufferData[mNumVertices+3] = x2;
-    mVertexBufferData[mNumVertices+4] = y2;
-    mVertexBufferData[mNumVertices+5] = z2;
+    mVertexBufferData[mNumVertices + 1] = y1;
+    mVertexBufferData[mNumVertices + 2] = z1;
+    mVertexBufferData[mNumVertices + 3] = x2;
+    mVertexBufferData[mNumVertices + 4] = y2;
+    mVertexBufferData[mNumVertices + 5] = z2;
     mNumVertices += 6;
 
     glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
