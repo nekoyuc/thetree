@@ -29,6 +29,7 @@ glm::vec3 direction = glm::vec3( 0, 0, 1);
 glm::vec3 getCameraDirection() {
   return direction;
 }
+glm::vec3 moveDirection = glm::vec3(0, 0, 0);
 
 // Initial horizontal angle : toward -Z
 float horizontalAngle = 3.14f;
@@ -38,10 +39,16 @@ float verticalAngle = 0.0f;
 float initialFoV = 45.0f;
 
 float speed = 3.0f; // 3 units / second
-float mouseSpeed = 0.005f;
+float mouseRotateSpeed = 0.005f;
+float mouseMoveSpeed = 0.005f;
+
 
 float lastX;
 float lastY;
+
+void onScrollEvent(GLFWwindow* window, double xoffset, double yoffset) {
+	position += direction*(float)yoffset*0.3f;
+}
 
 void computeMatricesFromInputs(){
 
@@ -61,17 +68,25 @@ void computeMatricesFromInputs(){
 
 	// Reset mouse position for next frame
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2)) {
-	  mouseSpeed = 0.005;
+	  mouseRotateSpeed = 0.005;
 	  //	  glfwSetCursorPos(window, 1024/2, 768/2);
 	} else {
-	  mouseSpeed = 0;
+	  mouseRotateSpeed = 0;
 	}
 
-
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_3)) {
+	  mouseMoveSpeed = 0.1;
+	}
+	else {
+		mouseMoveSpeed = 0;
+	}
 
 	// Compute new orientation
-	horizontalAngle += mouseSpeed * float(lastX - xpos );
-	verticalAngle   += mouseSpeed * float( lastY - ypos );
+	horizontalAngle += -mouseRotateSpeed * float(lastX - xpos );
+	verticalAngle   += -mouseRotateSpeed * float( lastY - ypos );
+
+	moveDirection = glm::vec3(lastX - xpos, ypos - lastY, 0);
+
 	lastX = xpos;
 	lastY = ypos;
 
@@ -93,13 +108,17 @@ void computeMatricesFromInputs(){
 	glm::vec3 up = glm::cross( right, direction );
 
 	// Move forward
-	if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS){
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_4)){
 		position += direction * deltaTime * speed;
 	}
+
 	// Move backward
-	if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS){
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_5)) {
 		position -= direction * deltaTime * speed;
 	}
+
+	position += moveDirection * deltaTime * mouseMoveSpeed;
+
 	// Strafe right
 	if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS){
 		position += right * deltaTime * speed;

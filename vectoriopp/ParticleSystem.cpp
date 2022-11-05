@@ -117,14 +117,14 @@ void ParticleSystem::update(double delta, Field* field) {
   // Generate 10 new particule each millisecond,
   // but limit this to 16 ms (60 fps), or if you have 1 long frame (1sec),
   // newparticles will be huge and the next frame even longer.
-  const int newParticles = 3000;
+  const int newParticles = 5000;
   int newparticles = (int)(delta*newParticles);
   if (newparticles > (int)(0.016f*newParticles))
     newparticles = (int)(0.016f*newParticles);
 		
   for(int i=0; i<newparticles; i++){
     int particleIndex = findUnusedParticle();
-    mParticles[particleIndex].life = 5.0f; // This particle will live 5 seconds.
+    mParticles[particleIndex].life = 8.0f; // This particle will live 8 seconds.
     mParticles[particleIndex].pos = glm::vec3(0,0.0,0.0f);
     float spread = 1.5f;
     glm::vec3 maindir = glm::vec3(0.0f, 10.0f, 0.0f);
@@ -143,7 +143,7 @@ void ParticleSystem::update(double delta, Field* field) {
     mParticles[particleIndex].b = rand() % 256;
     mParticles[particleIndex].a = (rand() % 256) / 2;
     
-    mParticles[particleIndex].size = (rand()%1000)/50000.0f + 0.1f;
+    mParticles[particleIndex].size = (rand()%1000)/10000.0f + 0.005f;
   }
   // Simulate all particles
   mParticlesCount = 0;

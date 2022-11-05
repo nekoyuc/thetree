@@ -122,6 +122,8 @@ int main()
   SketchField sketchField;
   LineController lineController(&drawLines, &sketchField);
 
+  glfwSetScrollCallback(window, onScrollEvent);
+
   
   double lastTime = glfwGetTime();
   do {
