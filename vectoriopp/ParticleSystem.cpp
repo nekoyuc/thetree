@@ -27,7 +27,9 @@ static const GLfloat g_vertex_buffer_data[] = {
   0.5f,  0.5f, 0.0f,
 };
 
-ParticleSystem::ParticleSystem() {
+
+ParticleSystem::ParticleSystem(DensityField* densityField) {
+	mDensityField = densityField;
 	init();
 }
 
@@ -158,6 +160,7 @@ void ParticleSystem::update(double delta, Field* field) {
 	p.speed *= 1.0; // super slo mo
 	p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
 	p.pos += p.speed * (float)delta;
+	//mDensityField->recordParticleAt(p.pos);
 	p.cameraDistance = glm::length2( p.pos - CameraPosition );
 	//mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
 	// Fill the GPU buffer

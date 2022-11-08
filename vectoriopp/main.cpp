@@ -23,6 +23,7 @@ using namespace glm;
 #include "ColoredTriangles.h"
 #include "LineRenderer.h"
 #include "LineController.h"
+#include "DensityField.h"
 
 GLfloat g_single_triangle_data[] = {
   -1.0f, -1.0f, 0.0f,
@@ -81,7 +82,7 @@ int main()
 
   // Ensure we can capture the escape key being pressed below
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-  // Hide the mouse and enable unlimited mouvement
+  // Hide the mouse and enable unlimited movement
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   
   // Set the mouse at the center of the screen
@@ -89,24 +90,24 @@ int main()
   glfwSetCursorPos(window, 1024/2, 768/2);
   
   // Dark blue background
-  glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+  glClearColor(0.7f, 0.8f, 0.9f, 0.0f);
   
   // Enable depth test
   glEnable(GL_DEPTH_TEST);
   // Accept fragment if it closer to the camera than the former one
   glDepthFunc(GL_LESS);
 
-  ParticleSystem particleSystem;
-
+  DensityField* densityField = new DensityField();
+  ParticleSystem particleSystem(densityField);
 
   CameraFacingTriangles drawPlane(&plane_data[0], 18);
-  drawPlane.mColor = glm::vec4(0.3, 0.3, 0.8, 0.4);
+  drawPlane.mColor = glm::vec4(0.9, 0.9, 0.9, 0.4);
 
   struct Plane : public ColoredTriangles {
       glm::mat4 mModelMatrix = glm::mat4(1.0f);
       Plane() : ColoredTriangles(&plane_data[0], 18) {
           mModelMatrix = glm::rotate(mModelMatrix, (float)(M_PI / 2.0f), glm::vec3(1, 0, 0));
-          mColor = glm::vec4(0.9, 0.732, 0.842739, 0.97);
+          mColor = glm::vec4(0.2, 0.2, 0.2, 0.97);
       }
       glm::mat4 getMVPMatrix() override {
           return getProjectionMatrix() * getViewMatrix() * mModelMatrix;
@@ -156,6 +157,7 @@ int main()
 
   // Close OpenGL window and terminate GLFW
   glfwTerminate();
+  delete densityField;
   return 0;
 }
 

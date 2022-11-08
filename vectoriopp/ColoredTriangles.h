@@ -7,7 +7,7 @@ public:
   void render();
   virtual glm::mat4 getMVPMatrix();
 
-  glm::vec4 mColor = glm::vec4(0.0, 0.8, 0.2, 0.4);
+  glm::vec4 mColor = glm::vec4(0.7, 0.8, 0.95, 0.3);
 private:
   GLfloat* mVertexBufferData;
   int mNumElements;
@@ -28,5 +28,3 @@ public:
   ~CameraFacingTriangles() = default;
   glm::mat4 getMVPMatrix() override;
 };
-
-

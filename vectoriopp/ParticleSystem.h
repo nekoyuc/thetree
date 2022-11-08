@@ -1,12 +1,13 @@
 #pragma once
 #include <glm/glm.hpp>
 #include "SketchField.h"
+#include "DensityField.h"
 
 #define MAX_PARTICLES 100000
 
 class ParticleSystem {
 public:
-    ParticleSystem();
+    ParticleSystem(DensityField* df);
     ~ParticleSystem();
 
     struct Particle {
@@ -27,6 +28,8 @@ private:
     Particle mParticles[MAX_PARTICLES];
     int mLastUsedParticle;
     int mParticlesCount;
+
+    DensityField* mDensityField;
 
     GLuint mVertexArrayId;
     GLuint mProgramId;

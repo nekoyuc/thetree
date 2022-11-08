@@ -47,7 +47,7 @@ float lastX;
 float lastY;
 
 void onScrollEvent(GLFWwindow* window, double xoffset, double yoffset) {
-	position += direction*(float)yoffset*0.3f;
+	position += direction*(float)yoffset*0.1f;
 }
 
 void computeMatricesFromInputs(){
@@ -108,16 +108,17 @@ void computeMatricesFromInputs(){
 	glm::vec3 up = glm::cross( right, direction );
 
 	// Move forward
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_4)){
-		position += direction * deltaTime * speed;
-	}
+	//if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_4)){
+	//	position += direction * deltaTime * speed;
+	//}
 
 	// Move backward
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_5)) {
-		position -= direction * deltaTime * speed;
-	}
+	//if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_5)) {
+	//	position -= direction * deltaTime * speed;
+	//}
 
 	position += moveDirection * deltaTime * mouseMoveSpeed;
+	//direction = -position; // normalize?
 
 	// Strafe right
 	if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS){
@@ -138,6 +139,11 @@ void computeMatricesFromInputs(){
 								position+direction, // and looks here : at the same position, plus "direction"
 								up                  // Head is up (set to 0,-1,0 to look upside-down)
 						   );
+	//ViewMatrix = glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(0, 0, 1), glm::vec3(0, 1, 0));
+	//ViewMatrix = glm::translate(ViewMatrix, position);
+
+	//ViewMatrix = glm::rotate(ViewMatrix, horizontalAngle, glm::vec3(0, 1, 0));
+	//ViewMatrix = glm::rotate(ViewMatrix, -verticalAngle/5, glm::vec3(1, 0, 0));
 
 	// For the next frame, the "last time" will be "now"
 	lastTime = currentTime;
