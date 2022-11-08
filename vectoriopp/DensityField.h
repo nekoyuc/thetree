@@ -15,7 +15,7 @@ public:
 		Entry(float xin, float yin, float zin) { x = xin; y = yin; z = zin; }
 	};
 
-	const float ROOM_W = 6.0f;
+	const float ROOM_W = 12.0f;
 	const float ROOM_D = 6.0f;
 	const float ROOM_H = 6.0f;
 	

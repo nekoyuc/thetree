@@ -1,11 +1,14 @@
 #include "DensityField.h"
 #include <math.h>
 
+#define CHECK_COORD(c) if (abs(c) > ROOM_W/2.0f) { return; }
+#define COORD2POS(c)  (int)((c + ROOM_W/2.0f) * (GRID_DIM/(float)ROOM_W))
 // Returns the indices in to the grid array corresponding to a given pos
 void DensityField::findGridLocation(glm::vec3 pos, int& x, int& y, int& z) {
-	 x = (int)(pos[0] / GRID_W);
-	 y = (int)(pos[1] / GRID_H);
-	 z = (int)(pos[2] / GRID_D);
+	 CHECK_COORD(pos[0]); CHECK_COORD(pos[1]); CHECK_COORD(pos[2]);
+	 x = COORD2POS(pos[0]);
+	 y = COORD2POS(pos[1]);
+	 z = COORD2POS(pos[2]);
 }
 
 // Record a stamp at given grid indices
@@ -36,6 +39,8 @@ void DensityField::recordParticleAt(glm::vec3 pos) {
 	stamp(x, y, z);
 }
 
+#define G2P(c) (((c/((float)GRID_DIM))*ROOM_W)-ROOM_W/2.0f)
+#define PUSH_LOC(x,y,z) profileLocations.push_back(Entry(G2P(xi),G2P(yi),G2P(zi)));
 std::vector<DensityField::Entry> DensityField::profile(float threshold) {
 	std::vector<Entry> profileLocations;
 	for (int yi = 0; yi < GRID_DIM; yi++) {
@@ -45,13 +50,13 @@ std::vector<DensityField::Entry> DensityField::profile(float threshold) {
 			for (int xi = 0; xi < GRID_DIM; xi++) {
 				if (start == false && grid[xi][yi][zi] > threshold) {
 					start = true;
-					profileLocations.push_back(Entry(xi, yi, zi));
+					PUSH_LOC(x, y, z);
 					continue;
 				}
 
 				if (start == true && grid[xi][yi][zi] <= threshold) {
 					start = false;
-					profileLocations.push_back(Entry(xi, yi, zi));
+					PUSH_LOC(x, y, z);
 					continue;
 				}
 			}

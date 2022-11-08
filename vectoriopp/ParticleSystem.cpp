@@ -119,16 +119,18 @@ void ParticleSystem::update(double delta, Field* field) {
   // Generate 10 new particule each millisecond,
   // but limit this to 16 ms (60 fps), or if you have 1 long frame (1sec),
   // newparticles will be huge and the next frame even longer.
-  const int newParticles = 5000;
+  const int newParticles = 1000;
   int newparticles = (int)(delta*newParticles);
   if (newparticles > (int)(0.016f*newParticles))
     newparticles = (int)(0.016f*newParticles);
+
+  delta /= 5.0;
 		
   for(int i=0; i<newparticles; i++){
 	  int particleIndex = findUnusedParticle();
 	  mParticles[particleIndex].life = 8.0f; // This particle will live 8 seconds.
 	  mParticles[particleIndex].pos = glm::vec3(0, 0.0, 0.0f);
-	  float spread = 1.5f;
+	  float spread = 1.1f;
 	  glm::vec3 maindir = glm::vec3(0.0f, 10.0f, 0.0f);
 	  // Very bad way to generate a random direction; 
 	  // See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
@@ -143,9 +145,9 @@ void ParticleSystem::update(double delta, Field* field) {
 	  mParticles[particleIndex].r = rand() % 256;
 	  mParticles[particleIndex].g = rand() % 256;
 	  mParticles[particleIndex].b = rand() % 256;
-	  mParticles[particleIndex].a = (rand() % 256) / 2;
-
-	  mParticles[particleIndex].size = (rand() % 1000) / 10000.0f + 0.005f;
+	//  mParticles[particleIndex].a = (rand() % 256) / 2;
+	  mParticles[particleIndex].a = 255;
+	  mParticles[particleIndex].size = ((rand() % 1000) / 10000.0f + 0.005f)/3.0f;
   }
   // Simulate all particles
   mParticlesCount = 0;
@@ -157,7 +159,6 @@ void ParticleSystem::update(double delta, Field* field) {
       if (p.life > 0.0f){
 	// Simulate simple physics : gravity only, no collisions
 	p.speed += glm::vec3(0.0f,-9.81f, 0.0f) * (float)delta * 0.5f;
-	p.speed *= 1.0; // super slo mo
 	p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
 	p.pos += p.speed * (float)delta;
 	if (mDensityField != nullptr) {
@@ -182,6 +183,13 @@ void ParticleSystem::update(double delta, Field* field) {
     }
   }
   sortParticles();
+  glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
+  glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
+  glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLfloat) * 4, mParticlePositionSizeData);
+
+  glBindBuffer(GL_ARRAY_BUFFER, mParticlesColorBuffer);
+  glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
+  glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLubyte) * 4, mParticleColorData);
 
 }
 
@@ -189,14 +197,7 @@ void ParticleSystem::render() {
   glm::mat4 ProjectionMatrix = getProjectionMatrix();
   glm::mat4 ViewMatrix = getViewMatrix();
   glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
-  glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
-  glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
-  glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLfloat) * 4, mParticlePositionSizeData);
-  
-  glBindBuffer(GL_ARRAY_BUFFER, mParticlesColorBuffer);
-  glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
-  glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLubyte) * 4, mParticleColorData);
-  
+
   
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

@@ -146,7 +146,11 @@ int main()
         densityVisualizer->render();
     }
     particleSystem.update(delta, &sketchField);
-    particleSystem.render();
+    glDisable(GL_BLEND);
+    if (!(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)) {
+        particleSystem.render();
+    }
+    glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 
     lineController.update(window);

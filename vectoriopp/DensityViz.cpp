@@ -11,12 +11,12 @@ void DensityViz::visualizeField(const std::vector<DensityField::Entry>& entries)
 		mParticles[particleIndex].pos = glm::vec3(entry.x, entry.y, entry.z);
  
         // Very bad way to generate a random color
-        mParticles[particleIndex].r = (unsigned char)255;
-        mParticles[particleIndex].g = (unsigned char)0;
-        mParticles[particleIndex].b = (unsigned char)0;
-		mParticles[particleIndex].a = (unsigned char)255;
+        mParticles[particleIndex].r = (unsigned char)20 + entry.x * 100;
+		mParticles[particleIndex].g = (unsigned char)30 + entry.y * 100;
+        mParticles[particleIndex].b = (unsigned char)200 + entry.z * 100;
+		mParticles[particleIndex].a = (unsigned char)180;
 
-        mParticles[particleIndex].size = (rand() % 1000) / 10000.0f + 0.005f;
+		mParticles[particleIndex].size = 0.005;
 	}
 
 	mParticlesCount = 0;
@@ -38,4 +38,12 @@ void DensityViz::visualizeField(const std::vector<DensityField::Entry>& entries)
 		}
 	}
 	sortParticles();
+	glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
+	glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLfloat) * 4, mParticlePositionSizeData);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mParticlesColorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
+	glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLubyte) * 4, mParticleColorData);
+
 }
