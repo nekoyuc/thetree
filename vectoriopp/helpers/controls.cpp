@@ -121,7 +121,7 @@ void computeMatricesFromInputs(){
 	//direction = -position; // normalize?
 
 	// Strafe right
-	if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS){
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
 		position += right * deltaTime * speed;
 	}
 	// Strafe left

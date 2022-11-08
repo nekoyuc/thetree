@@ -1,6 +1,7 @@
 #pragma once 
 #include <glm/glm.hpp>
 #include <GL/glew.h>
+#include <vector>
 
 #define GRID_DIM 576
 
@@ -8,6 +9,11 @@ class DensityField {
 public:
 	DensityField() = default;
 	~DensityField() = default;
+
+	struct Entry {
+		float x, y, z;
+		Entry(float xin, float yin, float zin) { x = xin; y = yin; z = zin; }
+	};
 
 	const float ROOM_W = 6.0f;
 	const float ROOM_D = 6.0f;
@@ -19,7 +25,7 @@ public:
 
     void recordParticleAt(glm::vec3 pos);
 	double evaluate(glm::vec3 pos);
-	void profile(float threshold = 250.0f);
+	std::vector<Entry> profile(float threshold = 250.0f);
 
 private:
 	GLfloat grid[GRID_DIM][GRID_DIM][GRID_DIM];

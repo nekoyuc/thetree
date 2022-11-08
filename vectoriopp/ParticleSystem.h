@@ -7,7 +7,7 @@
 
 class ParticleSystem {
 public:
-    ParticleSystem(DensityField* df);
+    ParticleSystem(DensityField* df = nullptr);
     ~ParticleSystem();
 
     struct Particle {
@@ -23,11 +23,9 @@ public:
 
     void update(double delta, Field* field);
     void render();
+    void init();
 
-private:
-    Particle mParticles[MAX_PARTICLES];
-    int mLastUsedParticle;
-    int mParticlesCount;
+protected:
 
     DensityField* mDensityField;
 
@@ -44,7 +42,10 @@ private:
     GLuint mParticlesPositionBuffer;
     GLuint mParticlesColorBuffer;
 
+    Particle mParticles[MAX_PARTICLES];
+    int mLastUsedParticle;
+    int mParticlesCount;
+
     int findUnusedParticle();
     void sortParticles();
-    void init();
 };

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <memory>
 
 #include <GL/glew.h>
 
@@ -24,6 +25,7 @@ using namespace glm;
 #include "LineRenderer.h"
 #include "LineController.h"
 #include "DensityField.h"
+#include "DensityViz.h"
 
 GLfloat g_single_triangle_data[] = {
   -1.0f, -1.0f, 0.0f,
@@ -89,7 +91,7 @@ int main()
   glfwPollEvents();
   glfwSetCursorPos(window, 1024/2, 768/2);
   
-  // Dark blue background
+  // Light blue background
   glClearColor(0.7f, 0.8f, 0.9f, 0.0f);
   
   // Enable depth test
@@ -125,6 +127,9 @@ int main()
 
   glfwSetScrollCallback(window, onScrollEvent);
 
+  auto densityVisualizer = std::make_unique<DensityViz>();
+  bool hasDensityVisualization = false;
+
   
   double lastTime = glfwGetTime();
   do {
@@ -137,6 +142,9 @@ int main()
     basePlane.render();
     glDisable(GL_DEPTH_TEST);
 
+    if (hasDensityVisualization) {
+        densityVisualizer->render();
+    }
     particleSystem.update(delta, &sketchField);
     particleSystem.render();
     glEnable(GL_DEPTH_TEST);
@@ -145,7 +153,11 @@ int main()
 
     drawLines.render();
     drawPlane.render();
-
+    if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !hasDensityVisualization) {
+        hasDensityVisualization = true;
+        densityVisualizer->visualizeField(densityField->profile());
+    }
+  
     
     // Swap buffers
     glfwSwapBuffers(window);

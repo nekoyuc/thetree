@@ -1,3 +1,5 @@
+#include <GLFW/glfw3.h>
+
 #ifndef CONTROLS_HPP
 #define CONTROLS_HPP
 

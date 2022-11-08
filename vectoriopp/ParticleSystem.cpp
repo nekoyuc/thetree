@@ -125,27 +125,27 @@ void ParticleSystem::update(double delta, Field* field) {
     newparticles = (int)(0.016f*newParticles);
 		
   for(int i=0; i<newparticles; i++){
-    int particleIndex = findUnusedParticle();
-    mParticles[particleIndex].life = 8.0f; // This particle will live 8 seconds.
-    mParticles[particleIndex].pos = glm::vec3(0,0.0,0.0f);
-    float spread = 1.5f;
-    glm::vec3 maindir = glm::vec3(0.0f, 10.0f, 0.0f);
-    // Very bad way to generate a random direction; 
-    // See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
-    // combined with some user-controlled parameters (main direction, spread, etc)
-    glm::vec3 randomdir = glm::vec3(
-				    (rand()%2000 - 1000.0f)/1000.0f,
-				    (rand()%2000 - 1000.0f)/1000.0f,
-				    (rand()%2000 - 1000.0f)/1000.0f
-			);
-    mParticles[particleIndex].speed = maindir + randomdir*spread;
-    // Very bad way to generate a random color
-    mParticles[particleIndex].r = rand() % 256;
-    mParticles[particleIndex].g = rand() % 256;
-    mParticles[particleIndex].b = rand() % 256;
-    mParticles[particleIndex].a = (rand() % 256) / 2;
-    
-    mParticles[particleIndex].size = (rand()%1000)/10000.0f + 0.005f;
+	  int particleIndex = findUnusedParticle();
+	  mParticles[particleIndex].life = 8.0f; // This particle will live 8 seconds.
+	  mParticles[particleIndex].pos = glm::vec3(0, 0.0, 0.0f);
+	  float spread = 1.5f;
+	  glm::vec3 maindir = glm::vec3(0.0f, 10.0f, 0.0f);
+	  // Very bad way to generate a random direction; 
+	  // See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
+	  // combined with some user-controlled parameters (main direction, spread, etc)
+	  glm::vec3 randomdir = glm::vec3(
+		  (rand() % 2000 - 1000.0f) / 1000.0f,
+		  (rand() % 2000 - 1000.0f) / 1000.0f,
+		  (rand() % 2000 - 1000.0f) / 1000.0f
+	  );
+	  mParticles[particleIndex].speed = (maindir + randomdir * spread)/2.0f;
+	  // Very bad way to generate a random color
+	  mParticles[particleIndex].r = rand() % 256;
+	  mParticles[particleIndex].g = rand() % 256;
+	  mParticles[particleIndex].b = rand() % 256;
+	  mParticles[particleIndex].a = (rand() % 256) / 2;
+
+	  mParticles[particleIndex].size = (rand() % 1000) / 10000.0f + 0.005f;
   }
   // Simulate all particles
   mParticlesCount = 0;
@@ -160,8 +160,10 @@ void ParticleSystem::update(double delta, Field* field) {
 	p.speed *= 1.0; // super slo mo
 	p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
 	p.pos += p.speed * (float)delta;
-	//mDensityField->recordParticleAt(p.pos);
-	p.cameraDistance = glm::length2( p.pos - CameraPosition );
+	if (mDensityField != nullptr) {
+		mDensityField->recordParticleAt(p.pos);
+	}
+	p.cameraDistance = glm::length(p.pos - getCameraPosition());
 	//mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
 	// Fill the GPU buffer
 	mParticlePositionSizeData[4*mParticlesCount+0] = p.pos.x;
