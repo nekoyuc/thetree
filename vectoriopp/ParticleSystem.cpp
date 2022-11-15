@@ -19,6 +19,7 @@ using namespace glm;
 #include "helpers/controls.hpp"
 
 #include "ParticleSystem.h"
+#include "Linerenderer.h"
 
 static const GLfloat g_vertex_buffer_data[] = { 
   -0.5f, -0.5f, 0.0f,
@@ -30,6 +31,9 @@ static const GLfloat g_vertex_buffer_data[] = {
 
 ParticleSystem::ParticleSystem(DensityField* densityField) {
 	mDensityField = densityField;
+	mTrailRenderer = new LineRenderer(MAX_PARTICLES * PARTICLE_HISTORY_LENGTH * 6);
+	mTrailRenderer->mColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+
 	init();
 }
 
@@ -106,7 +110,9 @@ void ParticleSystem::init() {
 void ParticleSystem::update(double delta, Field* field) {
   glm::mat4 ProjectionMatrix = getProjectionMatrix();
   glm::mat4 ViewMatrix = getViewMatrix();
-  
+
+  // TODO: Could remove argument
+  delta = 0.08;
   // We will need the camera's position in order to sort the particles
   // w.r.t the camera's distance.
   // There should be a getCameraPosition() function in common/controls.cpp, 
@@ -151,37 +157,68 @@ void ParticleSystem::update(double delta, Field* field) {
   }
   // Simulate all particles
   mParticlesCount = 0;
-  for(int i=0; i<MAX_PARTICLES; i++){
-    Particle& p = mParticles[i]; // shortcut
-    if(p.life > 0.0f){
-      // Decrease life
-      p.life -= delta;
-      if (p.life > 0.0f){
-	// Simulate simple physics : gravity only, no collisions
-	p.speed += glm::vec3(0.0f,-9.81f, 0.0f) * (float)delta * 0.5f;
-	p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
-	p.pos += p.speed * (float)delta;
-	if (mDensityField != nullptr) {
-		mDensityField->recordParticleAt(p.pos);
-	}
-	p.cameraDistance = glm::length(p.pos - getCameraPosition());
-	//mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
-	// Fill the GPU buffer
-	mParticlePositionSizeData[4*mParticlesCount+0] = p.pos.x;
-	mParticlePositionSizeData[4*mParticlesCount+1] = p.pos.y;
-	mParticlePositionSizeData[4*mParticlesCount+2] = p.pos.z;
-	mParticlePositionSizeData[4*mParticlesCount+3] = p.size;
-	mParticleColorData[4*mParticlesCount+0] = p.r;
-	mParticleColorData[4*mParticlesCount+1] = p.g;
-	mParticleColorData[4*mParticlesCount+2] = p.b;
-	mParticleColorData[4*mParticlesCount+3] = p.a;
-      }else{
-	// Particles that just died will be put at the end of the buffer in SortParticles();
-	p.cameraDistance = -1.0f;
-      }
-      mParticlesCount++;
-    }
+  mTrailCount = 0;
+  mTrailRenderer->mNumVertices = 0;
+  for (int i = 0; i < MAX_PARTICLES; i++) {
+	  Particle& p = mParticles[i]; // shortcut
+	  if (p.life > 0.0f) {
+		  // Decrease life
+		  p.life -= delta;
+		  if (p.life > 0.0f) {
+			  // Simulate simple physics : gravity only, no collisions
+			  p.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)delta * 0.5f;
+			  p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
+			  p.pos += p.speed * (float)delta;
+
+			  p.recordHistory(p.pos);
+			  if (mDensityField != nullptr) {
+				  mDensityField->recordParticleAt(p.pos);
+			  }
+			  p.cameraDistance = glm::length(p.pos - getCameraPosition());
+			  //mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
+			  // Fill the GPU buffer
+			  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
+			  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
+			  mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
+			  mParticlePositionSizeData[4 * mParticlesCount + 3] = p.size;
+			  mParticleColorData[4 * mParticlesCount + 0] = p.r;
+			  mParticleColorData[4 * mParticlesCount + 1] = p.g;
+			  mParticleColorData[4 * mParticlesCount + 2] = p.b;
+			  mParticleColorData[4 * mParticlesCount + 3] = p.a;
+
+			  // Update trails. Trail count is total number of trail vertices, count is number for
+			  // current particle
+			  int count = 0;
+			  p.iterateHistory([&](const glm::vec3& pos) {
+				  if (count < 2) {
+					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = pos.x;
+					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = pos.y;
+					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = pos.z;
+					  mTrailRenderer->mNumVertices += 3;
+					  mTrailCount++;
+					  count++;
+
+				  }
+				  else {
+					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 5] = pos.z;
+					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 4] = pos.y;
+					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 3] = pos.x;
+					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 1];
+					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 2];
+				      mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 3];
+					  mTrailRenderer->mNumVertices += 6;
+					  mTrailCount += 2;
+				  }
+			  });
+		  }
+		  else {
+			  // Particles that just died will be put at the end of the buffer in SortParticles();
+			  p.cameraDistance = -1.0f;
+		  }
+		  mParticlesCount++;
+	  }
   }
+  
   sortParticles();
   glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
   glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
@@ -190,6 +227,8 @@ void ParticleSystem::update(double delta, Field* field) {
   glBindBuffer(GL_ARRAY_BUFFER, mParticlesColorBuffer);
   glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
   glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLubyte) * 4, mParticleColorData);
+
+  mTrailRenderer->uploadToGPU();
 
 }
 
@@ -274,5 +313,7 @@ void ParticleSystem::render() {
   glDisableVertexAttribArray(0);
   glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(2);  
+
+  mTrailRenderer->render();
 }
 

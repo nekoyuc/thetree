@@ -1,2 +1,2 @@
 all:
-	g++ --std=c++14 *.cpp helpers/*.cpp -lGL `pkg-config --cflags --libs glm glew glfw3` -o vectorio
+	g++ --std=c++14 *.cpp helpers/*.cpp -lGL -lpthread `pkg-config --cflags --libs glm glew glfw3` -o vectorio

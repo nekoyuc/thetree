@@ -1,5 +1,6 @@
 #include "DensityField.h"
 #include <math.h>
+#include <future>
 
 #define CHECK_COORD(c) if (abs(c) > ROOM_W/2.0f) { return; }
 #define COORD2POS(c)  (int)((c + ROOM_W/2.0f) * (GRID_DIM/(float)ROOM_W))
@@ -34,35 +35,45 @@ void DensityField::stamp(int x, int y, int z, int expansion, float maxStamp) {
 }
 
 void DensityField::recordParticleAt(glm::vec3 pos) {
+	if (mDontRecord == true) {
+		return;
+	}
 	int x, y, z;
 	findGridLocation(pos, x, y, z);
 	stamp(x, y, z);
 }
 
+void DensityField::doneProfiling() {
+	mDontRecord = false;
+}
+
 #define G2P(c) (((c/((float)GRID_DIM))*ROOM_W)-ROOM_W/2.0f)
 #define PUSH_LOC(x,y,z) profileLocations.push_back(Entry(G2P(xi),G2P(yi),G2P(zi)));
-std::vector<DensityField::Entry> DensityField::profile(float threshold) {
-	std::vector<Entry> profileLocations;
-	for (int yi = 0; yi < GRID_DIM; yi++) {
-		for (int zi = 0; zi < GRID_DIM; zi++) {
-			bool start = false;
-			float value = 0.0f;
-			for (int xi = 0; xi < GRID_DIM; xi++) {
-				if (start == false && grid[xi][yi][zi] > threshold) {
-					start = true;
-					PUSH_LOC(x, y, z);
-					continue;
-				}
+std::future<std::vector<DensityField::Entry>> DensityField::profile(float threshold) {
+	mDontRecord = true;
+	return std::async(std::launch::async, [&]() {
+		std::vector<Entry> profileLocations;
+		for (int yi = 0; yi < GRID_DIM; yi++) {
+			for (int zi = 0; zi < GRID_DIM; zi++) {
+				bool start = false;
+				float value = 0.0f;
+				for (int xi = 0; xi < GRID_DIM; xi++) {
+					if (start == false && grid[xi][yi][zi] > threshold) {
+						start = true;
+						PUSH_LOC(x, y, z);
+						continue;
+					}
 
-				if (start == true && grid[xi][yi][zi] <= threshold) {
-					start = false;
-					PUSH_LOC(x, y, z);
-					continue;
+					if (start == true && grid[xi][yi][zi] <= threshold) {
+						start = false;
+						PUSH_LOC(x, y, z);
+						continue;
+					}
 				}
 			}
 		}
-	}
-	return profileLocations;
+		return profileLocations;
+		});
 }
 
 double DensityField::evaluate(glm::vec3 pos) {

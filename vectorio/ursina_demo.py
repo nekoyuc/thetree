@@ -191,7 +191,7 @@ def density_decoder(string):
             zs = True
         if ys == True and zs == False:
             y += letter
-        if letter == "y":
+        if letter == "y": 
             ys = True
         if xs == True and ys == False:
             x += letter

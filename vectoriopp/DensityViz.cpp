@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 void DensityViz::visualizeField(const std::vector<DensityField::Entry>& entries) {
+	printf("Starting 1\n");
 	for (const auto& entry : entries) {
         int particleIndex = findUnusedParticle();
         mParticles[particleIndex].life = 0.1f; // has to be non zero        
@@ -16,9 +17,9 @@ void DensityViz::visualizeField(const std::vector<DensityField::Entry>& entries)
         mParticles[particleIndex].b = (unsigned char)200 + entry.z * 100;
 		mParticles[particleIndex].a = (unsigned char)180;
 
-		mParticles[particleIndex].size = 0.005;
+		mParticles[particleIndex].size = 0.01;
 	}
-
+	printf("Starting 2\n");
 	mParticlesCount = 0;
 	for (int i = 0; i < MAX_PARTICLES; i++) {
 		Particle& p = mParticles[i]; // shortcut
@@ -37,7 +38,9 @@ void DensityViz::visualizeField(const std::vector<DensityField::Entry>& entries)
 			p.cameraDistance = -1.0f;
 		}
 	}
+	printf("Starting 3\n");
 	sortParticles();
+
 	glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
 	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
 	glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLfloat) * 4, mParticlePositionSizeData);

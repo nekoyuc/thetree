@@ -8,6 +8,7 @@
 #include <GL/glew.h>
 
 #include <GLFW/glfw3.h>
+#include <chrono>
 GLFWwindow* window;
 
 #include <glm/glm.hpp>
@@ -32,6 +33,8 @@ GLfloat g_single_triangle_data[] = {
   1.0f, -1.0f, 0.0f,
   0.0f,  1.0f, 0.0f,
 };
+
+/*
 GLfloat g_sample_line_data[] = {
   0.0f, 0.0f, 0.0f,
   0.0f,1.0f, 0.0f,
@@ -40,13 +43,15 @@ GLfloat g_sample_line_data[] = {
   0.0f,0.0f,0.0f,
   1.0f,0.0f,0.0f,
 };
+*/
+
 GLfloat plane_data[] = {
--1.0f, -1.0f, 0.0f,
-1.0f, -1.0f, 0.0f,
-1.0f,  1.0f, 0.0f,
--1.0f, -1.0f, 0.0f,
-1.0f, 1.0f, 0.0f,
--1.0f, 1.0f, 0.0f
+-3.0f, -3.0f, 0.0f,
+3.0f, -3.0f, 0.0f,
+3.0f,  3.0f, 0.0f,
+-3.0f, -3.0f, 0.0f,
+3.0f, 3.0f, 0.0f,
+-3.0f, 3.0f, 0.0f
 };
 
 int main()
@@ -100,9 +105,10 @@ int main()
   glDepthFunc(GL_LESS);
 
   DensityField* densityField = new DensityField();
-  ParticleSystem particleSystem(densityField);
+  ParticleSystem* particleSystem = new ParticleSystem(densityField);
 
   CameraFacingTriangles drawPlane(&plane_data[0], 18);
+  drawPlane.mPosition = glm::vec3(0.0f, 0.0f, -3.0f);
   drawPlane.mColor = glm::vec4(0.9, 0.9, 0.9, 0.4);
 
   struct Plane : public ColoredTriangles {
@@ -132,6 +138,8 @@ int main()
 
   
   double lastTime = glfwGetTime();
+  std::future<std::vector<DensityField::Entry>> futureProfiling;
+  bool waitingOnFuture = false;
   do {
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -145,10 +153,10 @@ int main()
     if (hasDensityVisualization) {
         densityVisualizer->render();
     }
-    particleSystem.update(delta, &sketchField);
+    particleSystem->update(delta, &sketchField);
     glDisable(GL_BLEND);
     if (!(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)) {
-        particleSystem.render();
+        particleSystem->render();
     }
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -157,12 +165,23 @@ int main()
 
     drawLines.render();
     drawPlane.render();
-    if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !hasDensityVisualization) {
-        hasDensityVisualization = true;
-        densityVisualizer->visualizeField(densityField->profile());
+
+   
+    if (waitingOnFuture) {
+        auto available = futureProfiling.wait_for(std::chrono::nanoseconds(1));
+        if (available == std::future_status::ready) {
+            densityVisualizer->visualizeField(futureProfiling.get());
+            hasDensityVisualization = true;
+            densityField->doneProfiling();
+            waitingOnFuture = false;
+        }
+    }
+    if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !hasDensityVisualization && !waitingOnFuture) {
+        futureProfiling = densityField->profile();
+        waitingOnFuture = true;
     }
   
-    
+
     // Swap buffers
     glfwSwapBuffers(window);
     glfwPollEvents();

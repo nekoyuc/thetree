@@ -21,18 +21,22 @@ static const GLfloat g_vertex_buffer_data[] = {
   0.0f,  1.0f, 0.0f,
 };
 
-LineRenderer::LineRenderer() {
+LineRenderer::LineRenderer(int numLines) {
+    mNumLines = numLines;
+    mVertexBufferData = (GLfloat*)malloc(6 * mNumLines * sizeof(GLfloat));
   glGenVertexArrays(1, &mVertexArrayId);
   glBindVertexArray(mVertexArrayId);
   // Create and compile our GLSL program from the shaders
-  mProgramId = LoadShaders( "SimpleVertexShader.vertexshader", "LineFragmentShader.fragmentshader" );
+  mProgramId = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );
   glGenBuffers(1, &mVertexBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
   glBufferData(GL_ARRAY_BUFFER, mNumVertices * sizeof(GLfloat), mVertexBufferData, GL_STREAM_DRAW);
   mViewProjMatrixId = glGetUniformLocation(mProgramId, "VP");
+  mColorId = glGetUniformLocation(mProgramId, "inputColor");
 }
 
 LineRenderer::~LineRenderer() {
+    free(mVertexBufferData);
   glDeleteBuffers(1, &mVertexBuffer);
   glDeleteVertexArrays(1, &mVertexArrayId);
   glDeleteProgram(mProgramId);
@@ -60,6 +64,11 @@ void LineRenderer::addLine(float x1, float y1, float z1, float x2, float y2, flo
     glBufferData(GL_ARRAY_BUFFER, mNumVertices * sizeof(GLfloat), mVertexBufferData, GL_STREAM_DRAW);
 }
 
+void LineRenderer::uploadToGPU() {
+    glBindBuffer(GL_ARRAY_BUFFER, mVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, mNumVertices * sizeof(GLfloat), mVertexBufferData, GL_STREAM_DRAW);
+}
+
 void LineRenderer::render() {
   mModelMatrix = glm::mat4(1.0);
   glm::mat4 ProjectionMatrix = getProjectionMatrix();
@@ -69,6 +78,7 @@ void LineRenderer::render() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glUseProgram(mProgramId);
 
+  glUniform4f(mColorId, mColor[0], mColor[1], mColor[2], mColor[3]);
   glUniformMatrix4fv(mViewProjMatrixId, 1, GL_FALSE, &ViewProjectionMatrix[0][0]);
   // 1rst attribute buffer : vertices
   glEnableVertexAttribArray(0);
@@ -82,7 +92,7 @@ void LineRenderer::render() {
     (void*)0            // array buffer offset
   );
   glLineWidth(2.0);
-  glDrawArrays(GL_LINES, 0, mNumVertices/3); // 3 indices starting at 0 -> 1 triangle
+  glDrawArrays(mMode, 0, mNumVertices/3); // 3 indices starting at 0 -> 1 triangle
   glDisableVertexAttribArray(0);
 }
 

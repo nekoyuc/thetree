@@ -8,9 +8,12 @@ public:
   virtual glm::mat4 getMVPMatrix();
 
   glm::vec4 mColor = glm::vec4(0.7, 0.8, 0.95, 0.3);
+  glm::vec3 mPosition = glm::vec3(0, 0, 25);
+
 private:
   GLfloat* mVertexBufferData;
   int mNumElements;
+
 
   GLuint mVertexArrayId;
   GLuint mProgramId;
@@ -19,7 +22,6 @@ private:
   GLuint mColorId;
 
   glm::mat4 mModelMatrix;
-  glm::vec3 mPosition = glm::vec3(0,0,5);
 };
 
 class CameraFacingTriangles : public ColoredTriangles {

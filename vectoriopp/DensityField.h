@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <GL/glew.h>
 #include <vector>
+#include <future>
 
 #define GRID_DIM 576
 
@@ -25,12 +26,15 @@ public:
 
     void recordParticleAt(glm::vec3 pos);
 	double evaluate(glm::vec3 pos);
-	std::vector<Entry> profile(float threshold = 250.0f);
+	std::future<std::vector<Entry>> profile(float threshold = 250.0f);
+
+	void doneProfiling();
 
 private:
 	GLfloat grid[GRID_DIM][GRID_DIM][GRID_DIM];
 	void stamp(int grid_x, int grid_y, int grid_z, int expansion=3, float maxStamp = 14);
 	void findGridLocation(glm::vec3 pos, int& x, int& y, int& z);
+	bool mDontRecord = false;
 };
 
 /*
