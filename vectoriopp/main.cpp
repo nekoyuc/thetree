@@ -176,6 +176,15 @@ int main()
             waitingOnFuture = false;
         }
     }
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        drawPlane.mPosition -= glm::vec3(0.0f, 0.0f, 0.05f);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        drawPlane.mPosition += glm::vec3(0.0f, 0.0f, 0.05f);
+    }
+
     if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !hasDensityVisualization && !waitingOnFuture) {
         futureProfiling = densityField->profile();
         waitingOnFuture = true;

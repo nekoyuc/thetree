@@ -91,7 +91,7 @@ void computeMatricesFromInputs(){
 
 	// Compute new orientation
 	horizontalAngle += mouseRotateSpeed * float(lastX - xpos );
-	verticalAngle   -= mouseRotateSpeed * float( lastY - ypos );
+	verticalAngle   += mouseRotateSpeed * float( lastY - ypos );
 
 	lastX = xpos;
 	lastY = ypos;
