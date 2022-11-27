@@ -115,7 +115,7 @@ void ParticleSystem::update(double delta, Field* field) {
   delta = 0.08;
   // We will need the camera's position in order to sort the particles
   // w.r.t the camera's distance.
-  // There should be a getCameraPosition() function in common/controls.cpp, 
+  // There should be a F() function in common/controls.cpp, 
   // but this works too.
   glm::vec3 CameraPosition(glm::inverse(ViewMatrix)[3]);
 
@@ -153,7 +153,7 @@ void ParticleSystem::update(double delta, Field* field) {
 	  mParticles[particleIndex].b = rand() % 256;
 	//  mParticles[particleIndex].a = (rand() % 256) / 2;
 	  mParticles[particleIndex].a = 255;
-	  mParticles[particleIndex].size = ((rand() % 1000) / 10000.0f + 0.005f)/3.0f;
+	  mParticles[particleIndex].size = (rand() % 1000) / 30000.0f + 0.001f;
   }
   // Simulate all particles
   mParticlesCount = 0;
@@ -161,6 +161,9 @@ void ParticleSystem::update(double delta, Field* field) {
   mTrailRenderer->mNumVertices = 0;
   for (int i = 0; i < MAX_PARTICLES; i++) {
 	  Particle& p = mParticles[i]; // shortcut
+	  if (p.pos.y < 0.0f) {
+		  p.life = 0.0f;
+	  }
 	  if (p.life > 0.0f) {
 		  // Decrease life
 		  p.life -= delta;

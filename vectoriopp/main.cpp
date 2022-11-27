@@ -21,12 +21,12 @@ using namespace glm;
 #include "helpers/texture.hpp"
 #include "helpers/controls.hpp"
 
-#include "ParticleSystem.h"
 #include "ColoredTriangles.h"
-#include "LineRenderer.h"
-#include "LineController.h"
 #include "DensityField.h"
 #include "DensityViz.h"
+#include "LineRenderer.h"
+#include "LineController.h"
+#include "ParticleSystem.h"
 
 GLfloat g_single_triangle_data[] = {
   -1.0f, -1.0f, 0.0f,
@@ -71,7 +71,7 @@ int main()
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   
   // Open a window and create its OpenGL context
-  window = glfwCreateWindow( 1024, 768, "Vectorio++", NULL, NULL);
+  window = glfwCreateWindow(1024, 768, "Vectorio++", NULL, NULL);
   if( window == NULL ) {
     fprintf( stderr, "Failed to open GLFW window.");
     glfwTerminate();

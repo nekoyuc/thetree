@@ -3,7 +3,6 @@
 
 #include <glm/glm.hpp>
 
-
 #define NUM_LINES 10000
 
 class LineRenderer {
