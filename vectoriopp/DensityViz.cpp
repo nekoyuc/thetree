@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <stdio.h>
 
-void DensityViz::visualizeField(const std::vector<DensityField::Entry>& entries) {
+void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries) {
 	printf("Starting 1\n");
 	for (const auto& entry : entries) {
         int particleIndex = findUnusedParticle();

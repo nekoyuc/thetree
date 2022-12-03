@@ -22,7 +22,7 @@ using namespace glm;
 #include "helpers/controls.hpp"
 
 #include "ColoredTriangles.h"
-#include "DensityField.h"
+#include "DensityGrid.h"
 #include "DensityViz.h"
 #include "LineRenderer.h"
 #include "LineController.h"
@@ -104,8 +104,8 @@ int main()
   // Accept fragment if it closer to the camera than the former one
   glDepthFunc(GL_LESS);
 
-  DensityField* densityField = new DensityField();
-  ParticleSystem* particleSystem = new ParticleSystem(densityField);
+  DensityGrid* densityGrid = new DensityGrid();
+  ParticleSystem* particleSystem = new ParticleSystem(densityGrid);
 
   CameraFacingTriangles drawPlane(&plane_data[0], 18);
   drawPlane.mPosition = glm::vec3(0.0f, 0.0f, -3.0f);
@@ -128,8 +128,8 @@ int main()
   drawLines.addLine(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
   drawLines.addLine(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-  SketchField sketchField;
-  LineController lineController(&drawLines, &sketchField);
+  LineField lineField;
+  LineController lineController(&drawLines, &lineField);
 
   glfwSetScrollCallback(window, onScrollEvent);
 
@@ -138,7 +138,7 @@ int main()
 
   
   double lastTime = glfwGetTime();
-  std::future<std::vector<DensityField::Entry>> futureProfiling;
+  std::future<std::vector<DensityGrid::Entry>> futureProfiling;
   bool waitingOnFuture = false;
   do {
     // Clear the screen
@@ -153,7 +153,7 @@ int main()
     if (hasDensityVisualization) {
         densityVisualizer->render();
     }
-    particleSystem->update(delta, &sketchField);
+    particleSystem->update(delta, &lineField);
     glDisable(GL_BLEND);
     if (!(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)) {
         particleSystem->render();
@@ -161,7 +161,7 @@ int main()
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 
-    lineController.update(window);
+    lineController.update(window, drawPlane.mPosition.z);
 
     drawLines.render();
     drawPlane.render();
@@ -172,7 +172,7 @@ int main()
         if (available == std::future_status::ready) {
             densityVisualizer->visualizeField(futureProfiling.get());
             hasDensityVisualization = true;
-            densityField->doneProfiling();
+            densityGrid->doneProfiling();
             waitingOnFuture = false;
         }
     }
@@ -186,7 +186,7 @@ int main()
     }
 
     if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !hasDensityVisualization && !waitingOnFuture) {
-        futureProfiling = densityField->profile();
+        futureProfiling = densityGrid->profile();
         waitingOnFuture = true;
     }
   
@@ -201,7 +201,7 @@ int main()
 
   // Close OpenGL window and terminate GLFW
   glfwTerminate();
-  delete densityField;
+  delete densityGrid;
   return 0;
 }
 

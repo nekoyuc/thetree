@@ -77,6 +77,6 @@ CameraFacingTriangles::CameraFacingTriangles(GLfloat* vertexBufferData, int numE
 }
 
 glm::mat4 CameraFacingTriangles::getMVPMatrix() {
-  return glm::translate(getProjectionMatrix(), mPosition);
+    return glm::translate(getProjectionMatrix(), mPosition);
 }
 

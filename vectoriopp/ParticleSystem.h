@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "SketchField.h"
-#include "DensityField.h"
+#include "LineField.h"
+#include "DensityGrid.h"
 #include "LineRenderer.h"
 #include <functional>
 
@@ -11,7 +11,7 @@
 
 class ParticleSystem {
 public:
-    ParticleSystem(DensityField* df = nullptr);
+    ParticleSystem(DensityGrid* df = nullptr);
     ~ParticleSystem();
 
     struct Particle {
@@ -56,7 +56,7 @@ public:
 
 protected:
 
-    DensityField* mDensityField;
+    DensityGrid* mDensityGrid;
 
     GLuint mVertexArrayId;
     GLuint mProgramId;

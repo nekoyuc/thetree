@@ -1,9 +1,9 @@
-#include "SketchField.h"
+#include "LineField.h"
 #include <float.h>
 #include <stdio.h>
 
 
-void SketchField::recordLine(float x1, float y1, float z1, float x2, float y2, float z2) {
+void LineField::recordLine(float x1, float y1, float z1, float x2, float y2, float z2) {
     if (mNumVertices + 6 > 60000 * 6) {
         printf("Out of space for lines \n");
         return;
@@ -42,7 +42,7 @@ static glm::vec3 computeRotationField(glm::vec3 particlePos, glm::vec3 linePos, 
 #define ROTATION_SCALE 1.0f
 #define DRAG_SCALE 2.0f
 
-glm::vec3 SketchField::sampleField(float x1, float y1, float z1) {
+glm::vec3 LineField::sampleField(float x1, float y1, float z1) {
     double closestDistance = DBL_MAX;
     glm::vec3 cStart, cEnd;
     glm::vec3 result = { 0,0,0 };

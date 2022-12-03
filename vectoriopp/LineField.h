@@ -7,10 +7,10 @@ public:
 	virtual glm::vec3 sampleField(float x1, float y1, float z1) = 0;
 };
 
-class SketchField : public Field {
+class LineField : public Field {
 public:
-	SketchField() = default;
-	~SketchField() = default;
+	LineField() = default;
+	~LineField() = default;
 
 	void recordLine(float x1, float y1, float z1, float x2, float y2, float z2);
 	glm::vec3 sampleField(float x1, float y1, float z1);

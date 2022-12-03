@@ -29,8 +29,8 @@ static const GLfloat g_vertex_buffer_data[] = {
 };
 
 
-ParticleSystem::ParticleSystem(DensityField* densityField) {
-	mDensityField = densityField;
+ParticleSystem::ParticleSystem(DensityGrid* densityGrid) {
+	mDensityGrid = densityGrid;
 	mTrailRenderer = new LineRenderer(MAX_PARTICLES * PARTICLE_HISTORY_LENGTH * 6);
 	mTrailRenderer->mColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -174,8 +174,8 @@ void ParticleSystem::update(double delta, Field* field) {
 			  p.pos += p.speed * (float)delta;
 
 			  p.recordHistory(p.pos);
-			  if (mDensityField != nullptr) {
-				  mDensityField->recordParticleAt(p.pos);
+			  if (mDensityGrid != nullptr) {
+				  mDensityGrid->recordParticleAt(p.pos);
 			  }
 			  p.cameraDistance = glm::length(p.pos - getCameraPosition());
 			  //mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;

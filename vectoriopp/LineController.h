@@ -1,18 +1,18 @@
 #pragma once
 
 #include "LineRenderer.h"
-#include "SketchField.h"
+#include "LineField.h"
 #include <GLFW/glfw3.h>
 
 class LineController {
 public:
-	LineController(LineRenderer*,SketchField*);
+	LineController(LineRenderer*,LineField*);
 	~LineController() = default;
 
-	void update(GLFWwindow *window);
+	void update(GLFWwindow *window, float planeDistance);
 private:
 	LineRenderer* mLineRenderer;
-	SketchField* mSketchField;
+	LineField* mLineField;
 	glm::vec3 mLastPos;
 	bool mHasLast = false;
 };
