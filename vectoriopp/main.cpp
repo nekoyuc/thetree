@@ -123,13 +123,13 @@ int main()
   };
   Plane basePlane;
 
-  LineRenderer drawLines;
-  drawLines.addLine(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-  drawLines.addLine(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-  drawLines.addLine(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+  LineRenderer lineRenderer;
+  lineRenderer.addLine(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+  lineRenderer.addLine(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+  lineRenderer.addLine(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
   LineField lineField;
-  LineController lineController(&drawLines, &lineField);
+  LineController lineController(&lineRenderer, &lineField); // take lines drawn on canvas and send them to lineRenderer and lineField
 
   glfwSetScrollCallback(window, onScrollEvent);
 
@@ -144,7 +144,7 @@ int main()
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     double currentTime = glfwGetTime();
-    double delta = currentTime - lastTime;
+    double delta = currentTime - lastTime; // delta ranges from ~0.05 to ~0.1 seconds
     lastTime = currentTime;
 
     basePlane.render();
@@ -163,7 +163,7 @@ int main()
 
     lineController.update(window, drawPlane.mPosition.z);
 
-    drawLines.render();
+    lineRenderer.render();
     drawPlane.render();
 
    
@@ -189,7 +189,6 @@ int main()
         futureProfiling = densityGrid->profile();
         waitingOnFuture = true;
     }
-  
 
     // Swap buffers
     glfwSwapBuffers(window);
@@ -197,7 +196,7 @@ int main()
     
     computeMatricesFromInputs();
   } while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
-		   glfwWindowShouldClose(window) == 0 );
+		   glfwWindowShouldClose(window) == 0 );                                                                                              
 
   // Close OpenGL window and terminate GLFW
   glfwTerminate();

@@ -82,7 +82,7 @@ void ParticleSystem::init() {
   mTextureId  = glGetUniformLocation(mProgramId, "myTextureSampler");
 	
   static GLfloat* mParticlePositionSizeData = new GLfloat[MAX_PARTICLES * 4];
-  static GLubyte* mParticleColorData         = new GLubyte[MAX_PARTICLES * 4];
+  static GLubyte* mParticleColorData = new GLubyte[MAX_PARTICLES * 4];
   for(int i=0; i<MAX_PARTICLES; i++){
     mParticles[i].life = -1.0f;
     mParticles[i].cameraDistance = -1.0f;
@@ -112,7 +112,7 @@ void ParticleSystem::update(double delta, Field* field) {
   glm::mat4 ViewMatrix = getViewMatrix();
 
   // TODO: Could remove argument
-  delta = 0.08;
+  //delta = 0.08;
   // We will need the camera's position in order to sort the particles
   // w.r.t the camera's distance.
   // There should be a F() function in common/controls.cpp, 
@@ -128,7 +128,7 @@ void ParticleSystem::update(double delta, Field* field) {
   const int newParticles = 1000;
   int newparticles = (int)(delta*newParticles);
   if (newparticles > (int)(0.016f*newParticles))
-    newparticles = (int)(0.016f*newParticles);
+    newparticles = (int)(0.016f*newParticles); // maximum of new particles is 16 per millisecond
 
   delta /= 5.0;
 		
@@ -161,7 +161,7 @@ void ParticleSystem::update(double delta, Field* field) {
   mTrailRenderer->mNumVertices = 0;
   for (int i = 0; i < MAX_PARTICLES; i++) {
 	  Particle& p = mParticles[i]; // shortcut
-	  if (p.pos.y < 0.0f) {
+	  if (p.pos.y < 0.0f || p.pos.x > 3 || p.pos.z > 3 || p.pos.x < -3 || p.pos.z < -3) {
 		  p.life = 0.0f;
 	  }
 	  if (p.life > 0.0f) {
@@ -170,7 +170,8 @@ void ParticleSystem::update(double delta, Field* field) {
 		  if (p.life > 0.0f) {
 			  // Simulate simple physics : gravity only, no collisions
 			  p.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)delta * 0.5f;
-			  p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
+			  //p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
+			  p.speed += 10.0f * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
 			  p.pos += p.speed * (float)delta;
 
 			  p.recordHistory(p.pos);

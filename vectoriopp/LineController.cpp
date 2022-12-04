@@ -6,9 +6,9 @@
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
 
-LineController::LineController(LineRenderer* renderer,LineField* field) {
+LineController::LineController(LineRenderer* renderer,LineField* lineField) {
 	mLineRenderer = renderer;
-	mLineField = field;
+	mLineField = lineField;
 }
 
 inline void normalizeCoordinates(double& x, double& y) {
@@ -21,7 +21,7 @@ inline void normalizeCoordinates(double& x, double& y) {
 }
 
 void LineController::update(GLFWwindow* window, float worldPlaneDistance) {
-	if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
+	if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) && !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2)) {
 		mHasLast = false;
 		return;
 	}

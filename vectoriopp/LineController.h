@@ -1,7 +1,7 @@
 #pragma once
 
 #include "LineRenderer.h"
-#include "LineField.h"
+#include "Field.h"
 #include <GLFW/glfw3.h>
 
 class LineController {

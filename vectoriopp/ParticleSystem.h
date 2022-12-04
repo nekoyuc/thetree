@@ -1,13 +1,13 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "LineField.h"
+#include "Field.h"
 #include "DensityGrid.h"
 #include "LineRenderer.h"
 #include <functional>
 
 #define MAX_PARTICLES 100000
 
-#define PARTICLE_HISTORY_LENGTH 10
+#define PARTICLE_HISTORY_LENGTH 20
 
 class ParticleSystem {
 public:
