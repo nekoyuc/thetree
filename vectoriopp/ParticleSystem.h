@@ -53,6 +53,8 @@ public:
     void update(double delta, Field* field);
     void render();
     void init();
+    bool addParticle = false;
+    glm::vec3 newPos = glm::vec3(0.0f, 0.0f, 0.0f);
 
 protected:
 

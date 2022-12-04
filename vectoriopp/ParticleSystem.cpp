@@ -21,6 +21,10 @@ using namespace glm;
 #include "ParticleSystem.h"
 #include "Linerenderer.h"
 
+#define FIELD_SCALE 0.4f
+#define ACCELERATION_SCALE 0.3f
+#define SPREAD 0.5f
+
 static const GLfloat g_vertex_buffer_data[] = { 
   -0.5f, -0.5f, 0.0f,
   0.5f, -0.5f, 0.0f,
@@ -131,29 +135,31 @@ void ParticleSystem::update(double delta, Field* field) {
     newparticles = (int)(0.016f*newParticles); // maximum of new particles is 16 per millisecond
 
   delta /= 5.0;
-		
-  for(int i=0; i<newparticles; i++){
-	  int particleIndex = findUnusedParticle();
-	  mParticles[particleIndex].life = 8.0f; // This particle will live 8 seconds.
-	  mParticles[particleIndex].pos = glm::vec3(0, 0.0, 0.0f);
-	  float spread = 1.1f;
-	  glm::vec3 maindir = glm::vec3(0.0f, 10.0f, 0.0f);
-	  // Very bad way to generate a random direction; 
-	  // See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
-	  // combined with some user-controlled parameters (main direction, spread, etc)
-	  glm::vec3 randomdir = glm::vec3(
-		  (rand() % 2000 - 1000.0f) / 1000.0f,
-		  (rand() % 2000 - 1000.0f) / 1000.0f,
-		  (rand() % 2000 - 1000.0f) / 1000.0f
-	  );
-	  mParticles[particleIndex].speed = (maindir + randomdir * spread)/2.0f;
-	  // Very bad way to generate a random color
-	  mParticles[particleIndex].r = rand() % 256;
-	  mParticles[particleIndex].g = rand() % 256;
-	  mParticles[particleIndex].b = rand() % 256;
-	//  mParticles[particleIndex].a = (rand() % 256) / 2;
-	  mParticles[particleIndex].a = 255;
-	  mParticles[particleIndex].size = (rand() % 1000) / 30000.0f + 0.001f;
+
+  // Create new particles
+  if (addParticle == true) {
+	  for (int i = 0; i < newparticles; i++) {
+		  int particleIndex = findUnusedParticle();
+		  mParticles[particleIndex].life = 8.0f; // This particle will live 8 seconds.
+		  mParticles[particleIndex].pos = newPos;
+		  glm::vec3 maindir = glm::vec3(0.0f, 0.0f, 0.0f);
+		  // Very bad way to generate a random direction; 
+		  // See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
+		  // combined with some user-controlled parameters (main direction, spread, etc)
+		  glm::vec3 randomdir = glm::vec3(
+			  (rand() % 2000 - 1000.0f) / 1000.0f,
+			  (rand() % 2000 - 1000.0f) / 1000.0f,
+			  (rand() % 2000 - 1000.0f) / 1000.0f
+		  );
+		  mParticles[particleIndex].speed = (maindir + randomdir * SPREAD) / 2.0f;
+		  // Very bad way to generate a random color
+		  mParticles[particleIndex].r = rand() % 256;
+		  mParticles[particleIndex].g = rand() % 256;
+		  mParticles[particleIndex].b = rand() % 256;
+		  //  mParticles[particleIndex].a = (rand() % 256) / 2;
+		  mParticles[particleIndex].a = 255;
+		  mParticles[particleIndex].size = (rand() % 1000) / 30000.0f + 0.001f;
+	  }
   }
   // Simulate all particles
   mParticlesCount = 0;
@@ -171,8 +177,10 @@ void ParticleSystem::update(double delta, Field* field) {
 			  // Simulate simple physics : gravity only, no collisions
 			  p.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)delta * 0.5f;
 			  //p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
-			  p.speed += 10.0f * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
-			  p.pos += p.speed * (float)delta;
+			  //p.speed += 10.0f * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
+			  p.pos += (ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
+				    + FIELD_SCALE * ((field->sampleField(p.pos[0], p.pos[1], p.pos[2])))
+				  ); // Field
 
 			  p.recordHistory(p.pos);
 			  if (mDensityGrid != nullptr) {

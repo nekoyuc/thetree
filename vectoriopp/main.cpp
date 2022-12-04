@@ -128,8 +128,8 @@ int main()
   lineRenderer.addLine(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
   lineRenderer.addLine(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-  LineField lineField;
-  LineController lineController(&lineRenderer, &lineField); // take lines drawn on canvas and send them to lineRenderer and lineField
+  LineField lineField;  
+  LineController lineController(&lineRenderer, &lineField, particleSystem);
 
   glfwSetScrollCallback(window, onScrollEvent);
 

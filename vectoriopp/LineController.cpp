@@ -6,9 +6,10 @@
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
 
-LineController::LineController(LineRenderer* renderer,LineField* lineField) {
+LineController::LineController(LineRenderer* renderer,LineField* lineField, ParticleSystem* particleSystem) {
 	mLineRenderer = renderer;
 	mLineField = lineField;
+	mParticleSystem = particleSystem;
 }
 
 inline void normalizeCoordinates(double& x, double& y) {
@@ -21,8 +22,14 @@ inline void normalizeCoordinates(double& x, double& y) {
 }
 
 void LineController::update(GLFWwindow* window, float worldPlaneDistance) {
-	if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) && !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2)) {
+
+	if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
 		mHasLast = false;
+	}
+	if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_3)) {
+		mParticleSystem->addParticle = false;
+	}
+	if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) && !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_3)) {
 		return;
 	}
 
@@ -75,12 +82,20 @@ void LineController::update(GLFWwindow* window, float worldPlaneDistance) {
 	end = glm::inverse(getProjectionMatrix()*getViewMatrix())*intersection;
 	printf("Adding line %f %f %f", end[0], end[1], end[2]);*/
 
-	if (mHasLast) {
-		mLineRenderer->addLine(mLastPos[0], mLastPos[1], mLastPos[2], end[0], end[1], end[2]);
-		mLineField->recordLine(mLastPos[0], mLastPos[1], mLastPos[2], end[0], end[1], end[2]);
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
+		if (mHasLast) {
+			mLineRenderer->addLine(mLastPos[0], mLastPos[1], mLastPos[2], end[0], end[1], end[2]);
+			mLineField->recordLine(mLastPos[0], mLastPos[1], mLastPos[2], end[0], end[1], end[2]);
+		}
+		mHasLast = true;
+		mLastPos = end;
 	}
-	mHasLast = true;
-	mLastPos = end;
+
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_3)) {
+		mParticleSystem->addParticle = true;
+		mParticleSystem->newPos = end;
+	}
 	//printf("Adding line (%f, %f, %f) to (%f ,%f, %f)\n", ((xpos / SCREEN_WIDTH) - 1), ((ypos / SCREEN_HEIGHT) - 1), -1.0f,
 //		((mLastX / SCREEN_WIDTH) - 1) * 2, ((mLastY / SCREEN_HEIGHT) - 1) * 2, -1.0f);
 	// Reset mouse position for next frame
