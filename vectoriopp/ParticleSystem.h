@@ -5,9 +5,9 @@
 #include "LineRenderer.h"
 #include <functional>
 
-#define MAX_PARTICLES 100000
+#define MAX_PARTICLES 10000
 
-#define PARTICLE_HISTORY_LENGTH 20
+#define PARTICLE_HISTORY_LENGTH 200
 
 class ParticleSystem {
 public:

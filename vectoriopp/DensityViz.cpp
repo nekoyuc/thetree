@@ -14,7 +14,7 @@ void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries) 
         // Very bad way to generate a random color
         mParticles[particleIndex].r = (unsigned char)20 + entry.x * 100;
 		mParticles[particleIndex].g = (unsigned char)30 + entry.y * 100;
-        mParticles[particleIndex].b = (unsigned char)200 + entry.z * 100;
+        mParticles[particleIndex].b = (unsigned char)50 + entry.z * 100;
 		mParticles[particleIndex].a = (unsigned char)180;
 
 		mParticles[particleIndex].size = 0.01;

@@ -21,9 +21,10 @@ using namespace glm;
 #include "ParticleSystem.h"
 #include "Linerenderer.h"
 
-#define FIELD_SCALE 0.4f
-#define ACCELERATION_SCALE 0.3f
-#define SPREAD 0.5f
+#define MAINTAIN_SCALE 0.5f
+#define FIELD_SCALE 7.0f
+#define ACCELERATION_SCALE 0.02f
+#define SPREAD 5.0f
 
 static const GLfloat g_vertex_buffer_data[] = { 
   -0.5f, -0.5f, 0.0f,
@@ -129,10 +130,10 @@ void ParticleSystem::update(double delta, Field* field) {
   // Generate 10 new particule each millisecond,
   // but limit this to 16 ms (60 fps), or if you have 1 long frame (1sec),
   // newparticles will be huge and the next frame even longer.
-  const int newParticles = 1000;
-  int newparticles = (int)(delta*newParticles);
+  const int newParticles = 500;
+  int newparticles = (int)(delta*newParticles); 
   if (newparticles > (int)(0.016f*newParticles))
-    newparticles = (int)(0.016f*newParticles); // maximum of new particles is 16 per millisecond
+    newparticles = (int)(0.008f*newParticles); // maximum of new particles is 4 per millisecond
 
   delta /= 5.0;
 
@@ -172,15 +173,19 @@ void ParticleSystem::update(double delta, Field* field) {
 	  }
 	  if (p.life > 0.0f) {
 		  // Decrease life
-		  p.life -= delta;
+		  //p.life -= delta;
 		  if (p.life > 0.0f) {
 			  // Simulate simple physics : gravity only, no collisions
-			  p.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)delta * 0.5f;
+			  p.speed = MAINTAIN_SCALE * p.speed
+				      + ACCELERATION_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
+				      + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
 			  //p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
 			  //p.speed += 10.0f * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
-			  p.pos += (ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
-				    + FIELD_SCALE * ((field->sampleField(p.pos[0], p.pos[1], p.pos[2])))
-				  ); // Field
+
+			  p.pos += //ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
+				  p.speed * (float)delta;
+			  printf("speed is %f\n", glm::length(p.speed));
+				    //+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2])); // Field
 
 			  p.recordHistory(p.pos);
 			  if (mDensityGrid != nullptr) {

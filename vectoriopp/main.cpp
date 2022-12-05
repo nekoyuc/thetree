@@ -144,7 +144,7 @@ int main()
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     double currentTime = glfwGetTime();
-    double delta = currentTime - lastTime; // delta ranges from ~0.05 to ~0.1 seconds
+    double delta = currentTime - lastTime; 
     lastTime = currentTime;
 
     basePlane.render();
@@ -188,6 +188,17 @@ int main()
     if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !hasDensityVisualization && !waitingOnFuture) {
         futureProfiling = densityGrid->profile();
         waitingOnFuture = true;
+        /*
+        for (int xi = 0; xi < 576; xi++) {
+            for (int yi = 0; yi < 576; yi++) {
+                for (int zi = 0; zi < 576; zi++) {
+                    if (densityGrid->grid[xi][yi][zi] > 0) {
+                        printf("grid value is %f\n", densityGrid->grid[xi][yi][zi]);
+                    }
+                }
+            }
+        }
+        */
     }
 
     // Swap buffers
