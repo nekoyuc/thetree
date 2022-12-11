@@ -53,8 +53,17 @@ public:
     void update(double delta, Field* field);
     void render();
     void init();
+
+    // for adding new particles
     bool addParticle = false;
     glm::vec3 newPos = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    //
+    bool showTrail = true;
+
+    // for erase effect
+    bool eraseOn = false;
+    glm::vec3 eraseRay = glm::vec3(0.0f, 0.0f, -1.0f);
 
 protected:
 
@@ -80,6 +89,8 @@ protected:
 
     LineRenderer* mTrailRenderer;
     int mTrailCount;
+
+    float mCrossProductLength;
 
     int findUnusedParticle();
     void sortParticles();

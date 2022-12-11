@@ -25,8 +25,9 @@ using namespace glm;
 #include "DensityGrid.h"
 #include "DensityViz.h"
 #include "LineRenderer.h"
-#include "LineController.h"
+#include "MouseHandler.h"
 #include "ParticleSystem.h"
+
 
 GLfloat g_single_triangle_data[] = {
   -1.0f, -1.0f, 0.0f,
@@ -79,6 +80,7 @@ int main()
   }
   glfwMakeContextCurrent(window);
 
+
   // Initialize GLEW
   glewExperimental = true; // Needed for core profile
   if (glewInit() != GLEW_OK) {
@@ -129,12 +131,15 @@ int main()
   lineRenderer.addLine(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
   LineField lineField;  
-  LineController lineController(&lineRenderer, &lineField, particleSystem);
+  MouseHandler mouseHandler(&lineRenderer, &lineField, particleSystem);
 
   glfwSetScrollCallback(window, onScrollEvent);
 
   auto densityVisualizer = std::make_unique<DensityViz>();
   bool hasDensityVisualization = false;
+
+
+
 
   
   double lastTime = glfwGetTime();
@@ -153,6 +158,9 @@ int main()
     if (hasDensityVisualization) {
         densityVisualizer->render();
     }
+
+    mouseHandler.update(window, drawPlane.mPosition.z);
+
     particleSystem->update(delta, &lineField);
     glDisable(GL_BLEND);
     if (!(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)) {
@@ -160,8 +168,6 @@ int main()
     }
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
-
-    lineController.update(window, drawPlane.mPosition.z);
 
     lineRenderer.render();
     drawPlane.render();
@@ -185,7 +191,11 @@ int main()
         drawPlane.mPosition += glm::vec3(0.0f, 0.0f, 0.05f);
     }
 
-    if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !hasDensityVisualization && !waitingOnFuture) {
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
+        particleSystem->showTrail = !particleSystem->showTrail;
+    }
+
+    if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !waitingOnFuture) {
         futureProfiling = densityGrid->profile();
         waitingOnFuture = true;
         /*
@@ -201,6 +211,15 @@ int main()
         */
     }
 
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        particleSystem->eraseOn = true;
+    }
+    else {
+        particleSystem->eraseOn = false;
+    }
+  
+
+
     // Swap buffers
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -211,6 +230,7 @@ int main()
 
   // Close OpenGL window and terminate GLFW
   glfwTerminate();
+
   delete densityGrid;
   return 0;
 }

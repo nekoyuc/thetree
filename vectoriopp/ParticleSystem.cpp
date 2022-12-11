@@ -171,10 +171,23 @@ void ParticleSystem::update(double delta, Field* field) {
 	  if (p.pos.y < 0.0f || p.pos.x > 3 || p.pos.z > 3 || p.pos.x < -3 || p.pos.z < -3) {
 		  p.life = 0.0f;
 	  }
+	  if (eraseOn == true) {
+		  if (p.life <= 0.0f) continue;
+	      glm:vec3 PoToCa = getCameraPosition() - p.pos;  
+		  mCrossProductLength = glm::length(glm::vec3(
+			  eraseRay[1] * PoToCa[2] - eraseRay[2] * PoToCa[1],
+			  eraseRay[2] * PoToCa[0] - eraseRay[0] * PoToCa[2],
+			  eraseRay[0] * PoToCa[1] - eraseRay[1] * PoToCa[0]
+		  ));	  
+		  printf("eraseRay is %f, %f, %f\n", eraseRay[0], eraseRay[1], eraseRay[2]);
+		  if (mCrossProductLength < 0.2f) {
+			  p.life = 0.0f;
+		  }
+	  }
 	  if (p.life > 0.0f) {
 		  // Decrease life
 		  //p.life -= delta;
-		  if (p.life > 0.0f) {
+		  if (glm::length(p.speed)>0.01f) {
 			  // Simulate simple physics : gravity only, no collisions
 			  p.speed = MAINTAIN_SCALE * p.speed
 				      + ACCELERATION_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
@@ -184,7 +197,7 @@ void ParticleSystem::update(double delta, Field* field) {
 
 			  p.pos += //ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
 				  p.speed * (float)delta;
-			  printf("speed is %f\n", glm::length(p.speed));
+			//  printf("speed is %f\n", glm::length(p.speed));
 				    //+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2])); // Field
 
 			  p.recordHistory(p.pos);
@@ -229,10 +242,36 @@ void ParticleSystem::update(double delta, Field* field) {
 			  });
 		  }
 		  else {
-			  // Particles that just died will be put at the end of the buffer in SortParticles();
-			  p.cameraDistance = -1.0f;
+			  if (showTrail == true) {
+				  int count = 0;
+				  p.iterateHistory([&](const glm::vec3& pos) {
+					  if (count < 2) {
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = pos.x;
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = pos.y;
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = pos.z;
+						  mTrailRenderer->mNumVertices += 3;
+						  mTrailCount++;
+						  count++;
+
+					  }
+					  else {
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 5] = pos.z;
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 4] = pos.y;
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 3] = pos.x;
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 1];
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 2];
+						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 3];
+						  mTrailRenderer->mNumVertices += 6;
+						  mTrailCount += 2;
+					  }
+					  });
+			  }
 		  }
 		  mParticlesCount++;
+	  }
+	  else {
+		  // Particles that just died will be put at the end of the buffer in SortParticles();
+		  p.cameraDistance = -1.0f;
 	  }
   }
   
