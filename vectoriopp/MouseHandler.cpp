@@ -2,9 +2,8 @@
 #include "MouseHandler.h"
 #include <GLFW/glfw3.h>
 #include "helpers/controls.hpp"
+#include "TunableParameters.h"
 
-#define SCREEN_WIDTH 1024
-#define SCREEN_HEIGHT 768
 
 MouseHandler::MouseHandler(LineRenderer* renderer,LineField* lineField, ParticleSystem* particleSystem) {
 	mLineRenderer = renderer;

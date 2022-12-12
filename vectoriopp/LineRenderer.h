@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-#define NUM_LINES 10000
+#include "TunableParameters.h"
 
 class LineRenderer {
 public:

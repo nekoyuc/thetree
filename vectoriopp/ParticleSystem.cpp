@@ -21,10 +21,8 @@ using namespace glm;
 #include "ParticleSystem.h"
 #include "Linerenderer.h"
 
-#define MAINTAIN_SCALE 0.5f
-#define FIELD_SCALE 7.0f
-#define ACCELERATION_SCALE 0.02f
-#define SPREAD 5.0f
+#include "TunableParameters.h"
+
 
 static const GLfloat g_vertex_buffer_data[] = { 
   -0.5f, -0.5f, 0.0f,
@@ -112,6 +110,11 @@ void ParticleSystem::init() {
   glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 }
 
+void ParticleSystem::Particle::recordHistory(const glm::vec3& position) {
+	history[currentHistoryPosition % PARTICLE_HISTORY_LENGTH] = position;
+	currentHistoryPosition++;
+}
+
 void ParticleSystem::update(double delta, Field* field) {
   glm::mat4 ProjectionMatrix = getProjectionMatrix();
   glm::mat4 ViewMatrix = getViewMatrix();
@@ -171,6 +174,7 @@ void ParticleSystem::update(double delta, Field* field) {
 	  if (p.pos.y < 0.0f || p.pos.x > 3 || p.pos.z > 3 || p.pos.x < -3 || p.pos.z < -3) {
 		  p.life = 0.0f;
 	  }
+	  
 	  if (eraseOn == true) {
 		  if (p.life <= 0.0f) continue;
 	      glm:vec3 PoToCa = getCameraPosition() - p.pos;  
@@ -180,9 +184,10 @@ void ParticleSystem::update(double delta, Field* field) {
 			  eraseRay[0] * PoToCa[1] - eraseRay[1] * PoToCa[0]
 		  ));	  
 		  printf("eraseRay is %f, %f, %f\n", eraseRay[0], eraseRay[1], eraseRay[2]);
-		  if (mCrossProductLength < 0.2f) {
+		  if (mCrossProductLength < ERASE_TOLERANCE) {
 			  p.life = 0.0f;
 		  }
+
 	  }
 	  if (p.life > 0.0f) {
 		  // Decrease life
@@ -205,7 +210,6 @@ void ParticleSystem::update(double delta, Field* field) {
 				  mDensityGrid->recordParticleAt(p.pos);
 			  }
 			  p.cameraDistance = glm::length(p.pos - getCameraPosition());
-			  //mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
 			  // Fill the GPU buffer
 			  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
 			  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
@@ -242,7 +246,21 @@ void ParticleSystem::update(double delta, Field* field) {
 			  });
 		  }
 		  else {
+
 			  if (showTrail == true) {
+				  p.cameraDistance = glm::length(p.pos - getCameraPosition());
+				  //mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
+				  // Fill the GPU buffer
+				  p.recordHistory(p.pos);
+				  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
+				  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
+				  mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
+				  mParticlePositionSizeData[4 * mParticlesCount + 3] = p.size;
+				  mParticleColorData[4 * mParticlesCount + 0] = p.r;
+				  mParticleColorData[4 * mParticlesCount + 1] = p.g;
+				  mParticleColorData[4 * mParticlesCount + 2] = p.b;
+				  mParticleColorData[4 * mParticlesCount + 3] = p.a;
+
 				  int count = 0;
 				  p.iterateHistory([&](const glm::vec3& pos) {
 					  if (count < 2) {

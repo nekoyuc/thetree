@@ -4,17 +4,15 @@
 #include "DensityGrid.h"
 #include "LineRenderer.h"
 #include <functional>
+#include "TunableParameters.h"
 
-#define MAX_PARTICLES 10000
-
-#define PARTICLE_HISTORY_LENGTH 200
 
 class ParticleSystem {
 public:
     ParticleSystem(DensityGrid* df = nullptr);
     ~ParticleSystem();
 
-    struct Particle {
+    struct Particle { // inner class
       glm::vec3 pos, speed;
       unsigned char r,g,b,a;
       float size, angle, weight;
@@ -24,10 +22,7 @@ public:
       glm::vec3 history[PARTICLE_HISTORY_LENGTH];
       int currentHistoryPosition = 0;
 
-      void recordHistory(const glm::vec3& position) {
-          history[currentHistoryPosition % PARTICLE_HISTORY_LENGTH] = position;
-          currentHistoryPosition++;
-      }
+      void recordHistory(const glm::vec3& position);
 
       void iterateHistory(const std::function<void(const glm::vec3&)>& run) {
           if (currentHistoryPosition < PARTICLE_HISTORY_LENGTH) {
