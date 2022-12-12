@@ -165,6 +165,7 @@ void ParticleSystem::update(double delta, Field* field) {
 		  mParticles[particleIndex].size = (rand() % 1000) / 30000.0f + 0.001f;
 	  }
   }
+
   // Simulate all particles
   mParticlesCount = 0;
   mTrailCount = 0;
@@ -192,25 +193,20 @@ void ParticleSystem::update(double delta, Field* field) {
 	  if (p.life > 0.0f) {
 		  // Decrease life
 		  //p.life -= delta;
-		  if (glm::length(p.speed)>0.01f) {
-			  // Simulate simple physics : gravity only, no collisions
+		  if (glm::length(p.speed) > 0.01f) {
 			  p.speed = MAINTAIN_SCALE * p.speed
-				      + ACCELERATION_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
-				      + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
-			  //p.pos += field->sampleField(p.pos[0], p.pos[1], p.pos[2]);
+				  + ACCELERATION_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
+				  + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
 			  //p.speed += 10.0f * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
 
 			  p.pos += //ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
 				  p.speed * (float)delta;
-			//  printf("speed is %f\n", glm::length(p.speed));
-				    //+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2])); // Field
 
-			  p.recordHistory(p.pos);
+			  //  printf("speed is %f\n", glm::length(p.speed));
+					  //+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2])); // Field
 			  if (mDensityGrid != nullptr) {
 				  mDensityGrid->recordParticleAt(p.pos);
 			  }
-			  p.cameraDistance = glm::length(p.pos - getCameraPosition());
-			  // Fill the GPU buffer
 			  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
 			  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
 			  mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
@@ -219,71 +215,36 @@ void ParticleSystem::update(double delta, Field* field) {
 			  mParticleColorData[4 * mParticlesCount + 1] = p.g;
 			  mParticleColorData[4 * mParticlesCount + 2] = p.b;
 			  mParticleColorData[4 * mParticlesCount + 3] = p.a;
+		  }
+
+		  p.recordHistory(p.pos);
+		  p.cameraDistance = glm::length(p.pos - getCameraPosition());
+			  // Fill the GPU buffer
+			  
 
 			  // Update trails. Trail count is total number of trail vertices, count is number for
 			  // current particle
+		  if (showTrail == true) {
 			  int count = 0;
 			  p.iterateHistory([&](const glm::vec3& pos) {
-				  if (count < 2) {
-					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = pos.x;
-					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = pos.y;
-					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = pos.z;
-					  mTrailRenderer->mNumVertices += 3;
-					  mTrailCount++;
-					  count++;
-
-				  }
-				  else {
-					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 5] = pos.z;
-					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 4] = pos.y;
-					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 3] = pos.x;
-					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 1];
-					  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 2];
-				      mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 3];
-					  mTrailRenderer->mNumVertices += 6;
-					  mTrailCount += 2;
-				  }
-			  });
-		  }
-		  else {
-
-			  if (showTrail == true) {
-				  p.cameraDistance = glm::length(p.pos - getCameraPosition());
-				  //mParticles[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
-				  // Fill the GPU buffer
-				  p.recordHistory(p.pos);
-				  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
-				  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
-				  mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
-				  mParticlePositionSizeData[4 * mParticlesCount + 3] = p.size;
-				  mParticleColorData[4 * mParticlesCount + 0] = p.r;
-				  mParticleColorData[4 * mParticlesCount + 1] = p.g;
-				  mParticleColorData[4 * mParticlesCount + 2] = p.b;
-				  mParticleColorData[4 * mParticlesCount + 3] = p.a;
-
-				  int count = 0;
-				  p.iterateHistory([&](const glm::vec3& pos) {
-					  if (count < 2) {
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = pos.x;
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = pos.y;
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = pos.z;
-						  mTrailRenderer->mNumVertices += 3;
-						  mTrailCount++;
-						  count++;
-
-					  }
-					  else {
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 5] = pos.z;
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 4] = pos.y;
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 3] = pos.x;
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 1];
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 2];
-						  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 3];
-						  mTrailRenderer->mNumVertices += 6;
-						  mTrailCount += 2;
-					  }
-					  });
+			  if (count < 2) {
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = pos.x;
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = pos.y;
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = pos.z;
+				  mTrailRenderer->mNumVertices += 3;
+				  mTrailCount++;
+				  count++;
+			  }else {
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 5] = pos.z;
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 4] = pos.y;
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 3] = pos.x;
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 2] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 1];
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 2];
+				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = mTrailRenderer->mVertexBufferData[3 * mTrailCount - 3];
+				  mTrailRenderer->mNumVertices += 6;
+				  mTrailCount += 2;
 			  }
+				  });
 		  }
 		  mParticlesCount++;
 	  }
