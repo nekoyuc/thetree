@@ -215,16 +215,18 @@ void ParticleSystem::update(double delta, Field* field) {
 			  mParticleColorData[4 * mParticlesCount + 1] = p.g;
 			  mParticleColorData[4 * mParticlesCount + 2] = p.b;
 			  mParticleColorData[4 * mParticlesCount + 3] = p.a;
+
+			  p.recordHistory(p.pos);
 		  }
 
-		  p.recordHistory(p.pos);
+		  //p.recordHistory(p.pos);
 		  p.cameraDistance = glm::length(p.pos - getCameraPosition());
 			  // Fill the GPU buffer
 			  
 
 			  // Update trails. Trail count is total number of trail vertices, count is number for
 			  // current particle
-		  if (showTrail == true) {
+		  if (showTrail == true && p.currentHistoryPosition > 1) {
 			  int count = 0;
 			  p.iterateHistory([&](const glm::vec3& pos) {
 			  if (count < 2) {
