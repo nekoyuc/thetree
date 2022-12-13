@@ -184,8 +184,23 @@ void ParticleSystem::update(double delta, Field* field) {
 			  eraseRay[2] * PoToCa[0] - eraseRay[0] * PoToCa[2],
 			  eraseRay[0] * PoToCa[1] - eraseRay[1] * PoToCa[0]
 		  ));	  
-		  printf("eraseRay is %f, %f, %f\n", eraseRay[0], eraseRay[1], eraseRay[2]);
+		  //printf("eraseRay is %f, %f, %f\n", eraseRay[0], eraseRay[1], eraseRay[2]);
 		  if (mCrossProductLength < ERASE_TOLERANCE) {
+			  int trailLength = 0;
+			  if (p.currentHistoryPosition >= PARTICLE_HISTORY_LENGTH) {
+				  trailLength = PARTICLE_HISTORY_LENGTH;
+			  }
+			  else {
+				  trailLength = p.currentHistoryPosition;
+			  }
+			  for (int i = 0; i < trailLength; i++){
+				  if (mDensityGrid->mDontRecord == false) {
+					  int x, y, z;
+					  mDensityGrid->findGridLocation(p.history[i], x, y, z);
+					  mDensityGrid->stamp(x, y, z, -1.0f);
+					  printf("destamp %d, %d, %d\n", x, y, z);
+				  }
+			  }
 			  p.life = 0.0f;
 		  }
 
@@ -205,7 +220,12 @@ void ParticleSystem::update(double delta, Field* field) {
 			  //  printf("speed is %f\n", glm::length(p.speed));
 					  //+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2])); // Field
 			  if (mDensityGrid != nullptr) {
-				  mDensityGrid->recordParticleAt(p.pos);
+				  //mDensityGrid->recordParticleAt(p.pos);
+				  if (mDensityGrid->mDontRecord==false) {
+					  int x, y, z;
+					  mDensityGrid->findGridLocation(p.pos, x, y, z);
+					  mDensityGrid->stamp(x, y, z, 1.0f);
+				  }
 			  }
 			  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
 			  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;

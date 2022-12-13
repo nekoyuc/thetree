@@ -15,27 +15,28 @@ void DensityGrid::findGridLocation(glm::vec3 pos, int& x, int& y, int& z) {
 }
 
 // Record a stamp at given grid indices
-void DensityGrid::stamp(int x, int y, int z, int expansion, float maxStamp) {
-	for (int xi = x-expansion; xi < x+expansion + 1 ; xi++) {
+void DensityGrid::stamp(int x, int y, int z, float plusMinus, int spread, float maxStamp) {
+	for (int xi = x-spread; xi < x+spread + 1 ; xi++) {
 		if (xi < 0 || xi >= GRID_NUM) {
 			continue;
 		}
-		for (int yi = y - expansion; yi < y + expansion + 1; yi++) {
+		for (int yi = y - spread; yi < y + spread + 1; yi++) {
 			if (yi < 0 || yi >= GRID_NUM) {
 				continue;
 			}
-			for (int zi = z - expansion; zi < z + expansion + 1; zi++) {
+			for (int zi = z - spread; zi < z + spread + 1; zi++) {
 				if (zi < 0 || zi >= GRID_NUM) {
 					continue;
 				}
 				float stampRaw = maxStamp - (float)(pow(abs(x - xi) * 1.2, 1.5) + pow(abs(y - yi) * 1.2, 1.5) + pow(abs(z - zi) * 1.2, 1.5));
 				float stamp = fmax(0, stampRaw);
-				grid[xi][yi][zi] += stamp;
+				grid[xi][yi][zi] += plusMinus * stamp;
 			}
 		}
 	}
 }
 
+/*
 void DensityGrid::recordParticleAt(glm::vec3 pos) {
 	if (mDontRecord == true) {
 		return;
@@ -44,6 +45,7 @@ void DensityGrid::recordParticleAt(glm::vec3 pos) {
 	findGridLocation(pos, x, y, z);
 	stamp(x, y, z);
 }
+*/
 
 void DensityGrid::doneProfiling() {
 	mDontRecord = false;

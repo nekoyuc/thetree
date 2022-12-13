@@ -29,12 +29,13 @@ public:
 	std::future<std::vector<Entry>> profile();
 
 	void doneProfiling(); // turn off recordParticleAt when true
+	bool mDontRecord = false;
+
+	void stamp(int grid_x, int grid_y, int grid_z, float plusMinus = 1.0f, int spread = STAMP_SPREAD, float maxStamp = MAX_STAMP);
+	void findGridLocation(glm::vec3 pos, int& x, int& y, int& z);
 
 private:
 	GLfloat grid[GRID_NUM][GRID_NUM][GRID_NUM];
-	void stamp(int grid_x, int grid_y, int grid_z, int spread = STAMP_SPREAD, float maxStamp = MAX_STAMP);
-	void findGridLocation(glm::vec3 pos, int& x, int& y, int& z);
-	bool mDontRecord = false;
 };
 
 /*
