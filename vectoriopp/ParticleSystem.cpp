@@ -207,8 +207,8 @@ void ParticleSystem::update(double delta, Field* field) {
 	  }
 	  if (p.life > 0.0f) {
 		  // Decrease life
-		  //p.life -= delta;
-		  if (glm::length(p.speed) > 0.01f) {
+		//p.life -= delta;
+		  if (glm::length(p.speed) > 1.0f) {
 			  p.speed = MAINTAIN_SCALE * p.speed
 				  + ACCELERATION_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
 				  + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
@@ -221,23 +221,22 @@ void ParticleSystem::update(double delta, Field* field) {
 					  //+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2])); // Field
 			  if (mDensityGrid != nullptr) {
 				  //mDensityGrid->recordParticleAt(p.pos);
-				  if (mDensityGrid->mDontRecord==false) {
+				  if (mDensityGrid->mDontRecord == false) {
 					  int x, y, z;
 					  mDensityGrid->findGridLocation(p.pos, x, y, z);
 					  mDensityGrid->stamp(x, y, z, 1.0f);
 				  }
 			  }
-			  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
-			  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
-			  mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
-			  mParticlePositionSizeData[4 * mParticlesCount + 3] = p.size;
-			  mParticleColorData[4 * mParticlesCount + 0] = p.r;
-			  mParticleColorData[4 * mParticlesCount + 1] = p.g;
-			  mParticleColorData[4 * mParticlesCount + 2] = p.b;
-			  mParticleColorData[4 * mParticlesCount + 3] = p.a;
-
 			  p.recordHistory(p.pos);
 		  }
+		  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
+		  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
+		  mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
+	      mParticlePositionSizeData[4 * mParticlesCount + 3] = p.size;
+		  mParticleColorData[4 * mParticlesCount + 0] = p.r;
+		  mParticleColorData[4 * mParticlesCount + 1] = p.g;
+		  mParticleColorData[4 * mParticlesCount + 2] = p.b;
+		  mParticleColorData[4 * mParticlesCount + 3] = p.a;		  
 
 		  //p.recordHistory(p.pos);
 		  p.cameraDistance = glm::length(p.pos - getCameraPosition());

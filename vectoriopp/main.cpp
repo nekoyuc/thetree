@@ -180,6 +180,7 @@ int main()
             hasDensityVisualization = true;
             densityGrid->doneProfiling();
             waitingOnFuture = false;
+            printf("done profiling\n");
         }
     }
 

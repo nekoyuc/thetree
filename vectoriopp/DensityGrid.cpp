@@ -66,7 +66,7 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 					if (start == false && grid[xi][yi][zi] > THRESHOLD) {
 						start = true;
 						profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C(zi)));
-						printf("entering density value is %f\n", grid[xi][yi][zi]);
+						//printf("entering density value is %f\n", grid[xi][yi][zi]);
 						//currLocations++;
 						if (profileLocations.size() > maxLocations) {
 							return profileLocations;
@@ -77,7 +77,7 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 					if (start == true && grid[xi][yi][zi] <= THRESHOLD) {
 						start = false;
 						profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C(zi)));
-						printf("exiting density value is %f\n", grid[xi][yi][zi]);
+						//printf("exiting density value is %f\n", grid[xi][yi][zi]);
 						if (profileLocations.size() > maxLocations) {
 							return profileLocations;
 						}
@@ -86,7 +86,7 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 				}
 			}
 		}
-		printf("Profiling thread complete");
+		printf("Profiling thread complete\n");
 		return profileLocations;
 		});
 }
