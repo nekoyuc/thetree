@@ -4,7 +4,12 @@
 #include <glm/glm.hpp>
 #include <stdio.h>
 
+#define MAX_PARTICLES_2 50000
+
 void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries) {
+	for (int i = 0; i < MAX_PARTICLES_2; i++) {
+		mParticles[i].life = -1.0f;
+	}
 	printf("Starting 1\n");
 	for (const auto& entry : entries) {
         int particleIndex = findUnusedParticle();
@@ -21,7 +26,7 @@ void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries) 
 	}
 	printf("Starting 2\n");
 	mParticlesCount = 0;
-	for (int i = 0; i < MAX_PARTICLES; i++) {
+	for (int i = 0; i < MAX_PARTICLES_2; i++) {
 		Particle& p = mParticles[i]; // shortcut
 		if (p.life > 0.0f) {
 			p.cameraDistance = glm::length(p.pos - getCameraPosition());
@@ -42,11 +47,11 @@ void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries) 
 	sortParticles();
 
 	glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
-	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
+	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES_2 * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
 	glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLfloat) * 4, mParticlePositionSizeData);
 
 	glBindBuffer(GL_ARRAY_BUFFER, mParticlesColorBuffer);
-	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
+	glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES_2 * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
 	glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLubyte) * 4, mParticleColorData);
 
 }

@@ -91,7 +91,8 @@ void computeMatricesFromInputs(){
 
 	// Compute new orientation
 	horizontalAngle += mouseRotateSpeed * float(lastX - xpos );
-	verticalAngle   += mouseRotateSpeed * float( lastY - ypos );
+	//verticalAngle   += mouseRotateSpeed * float( lastY - ypos );
+	verticalAngle = std::fmax(-2.0f, std::fmin(2.0f, verticalAngle + mouseRotateSpeed * float(lastY - ypos)));
 
 	lastX = xpos;
 	lastY = ypos;
@@ -143,8 +144,15 @@ void computeMatricesFromInputs(){
     if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS){
 		sphereRadius += 0.1;
 	}
-	position[0] = sphereRadius * sin(horizontalAngle) * cos(verticalAngle);
-	position[1] = sphereRadius * sin(horizontalAngle) * sin(verticalAngle);
+
+	//spherical coordinates
+	//position[0] = sphereRadius * sin(horizontalAngle) * cos(verticalAngle);
+	//position[1] = sphereRadius * sin(horizontalAngle) * sin(verticalAngle);
+	//position[2] = sphereRadius * cos(horizontalAngle);
+
+	//cylindral coordinates
+	position[0] = sphereRadius * sin(horizontalAngle);
+	position[1] = -verticalAngle * 5;
 	position[2] = sphereRadius * cos(horizontalAngle);
 
 	// Strafe right
