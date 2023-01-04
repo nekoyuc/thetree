@@ -6,6 +6,7 @@
 #define CHECK_COORD(c) if (abs(c) > ROOM_W/2.0f) { return; }
 // Make sure points are in room scope
 #define COORD2GRID(c)  (int)((c + ROOM_W/2.0f) * (GRID_NUM/(float)ROOM_W))
+
 // Returns the indices in to the grid array corresponding to a given pos
 void DensityGrid::findGridLocation(glm::vec3 pos, int& x, int& y, int& z) {
 	 CHECK_COORD(pos[0]); CHECK_COORD(pos[1]); CHECK_COORD(pos[2]);
@@ -45,15 +46,15 @@ void DensityGrid::recordParticleAt(glm::vec3 pos) {
 	findGridLocation(pos, x, y, z);
 	stamp(x, y, z);
 }
-*/
 
 void DensityGrid::doneProfiling() {
 	mDontRecord = false;
 }
+*/
 
 #define G2C(g) (((g/((float)GRID_NUM))*ROOM_W)-ROOM_W/2.0f)
 std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
-	mDontRecord = true;
+	//mDontRecord = true;
 	return std::async(std::launch::async, [&]() {
 		int maxLocations = 100000;
 		//int currLocations = 0;
@@ -91,6 +92,8 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 		});
 }
 
+/*
 double DensityGrid::evaluate(glm::vec3 pos) {
 	return 0.0f;
 }
+*/

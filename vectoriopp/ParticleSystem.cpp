@@ -146,7 +146,7 @@ void ParticleSystem::update(double delta, Field* field) {
 		  int particleIndex = findUnusedParticle();
 		  mParticles[particleIndex].life = 8.0f; // This particle will live 8 seconds.
 		  mParticles[particleIndex].pos = newPos;
-		  glm::vec3 maindir = glm::vec3(0.0f, 0.0f, 0.0f);
+		  glm::vec3 maindir = glm::vec3(0.0f, 0.5f, 0.0f);
 		  // Very bad way to generate a random direction; 
 		  // See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
 		  // combined with some user-controlled parameters (main direction, spread, etc)
@@ -194,7 +194,8 @@ void ParticleSystem::update(double delta, Field* field) {
 				  trailLength = p.currentHistoryPosition;
 			  }
 			  for (int i = 0; i < trailLength; i++){
-				  if (mDensityGrid->mDontRecord == false) {
+				  //if (mDensityGrid->mDontRecord == false) {
+				  {
 					  int x, y, z;
 					  mDensityGrid->findGridLocation(p.history[i], x, y, z);
 					  mDensityGrid->stamp(x, y, z, -1.0f);
@@ -221,7 +222,8 @@ void ParticleSystem::update(double delta, Field* field) {
 					  //+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2])); // Field
 			  if (mDensityGrid != nullptr) {
 				  //mDensityGrid->recordParticleAt(p.pos);
-				  if (mDensityGrid->mDontRecord == false) {
+				  //if (mDensityGrid->mDontRecord == false) {
+				  {
 					  int x, y, z;
 					  mDensityGrid->findGridLocation(p.pos, x, y, z);
 					  mDensityGrid->stamp(x, y, z, 1.0f);

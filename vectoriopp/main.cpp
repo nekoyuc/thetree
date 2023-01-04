@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <vector>
 #include <algorithm>
 #include <memory>
@@ -139,12 +142,13 @@ int main()
   bool hasDensityVisualization = false;
 
 
-
-
-  
   double lastTime = glfwGetTime();
   std::future<std::vector<DensityGrid::Entry>> futureProfiling;
   bool waitingOnFuture = false;
+  bool drawPlaneRender = true;
+
+
+
   do {
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -170,7 +174,9 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     lineRenderer.render();
-    drawPlane.render();
+    if (drawPlaneRender == true) {
+        drawPlane.render();
+    }
 
    
     if (waitingOnFuture) {
@@ -178,7 +184,7 @@ int main()
         if (available == std::future_status::ready) {
             densityVisualizer->visualizeField(futureProfiling.get());
             hasDensityVisualization = true;
-            densityGrid->doneProfiling();
+            //densityGrid->doneProfiling();
             waitingOnFuture = false;
             printf("done profiling\n");
         }
@@ -194,6 +200,10 @@ int main()
 
     if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
         particleSystem->showTrail = !particleSystem->showTrail;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        drawPlaneRender = !drawPlaneRender;
     }
 
     if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !waitingOnFuture) {

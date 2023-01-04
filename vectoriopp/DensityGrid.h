@@ -25,9 +25,9 @@ public:
 	const float GRID_H = ROOM_H / GRID_NUM;
 
     //void recordParticleAt(glm::vec3 pos); // do stamp and findGridLocation
-	double evaluate(glm::vec3 pos);
-	std::future<std::vector<Entry>> profile();
+	//double evaluate(glm::vec3 pos);
 
+	std::future<std::vector<Entry>> profile();
 	void doneProfiling(); // turn off recordParticleAt when true
 	bool mDontRecord = false;
 

@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <stdio.h>
 
-#define MAX_PARTICLES_2 50000
+#define MAX_PARTICLES_2 10000
 
 void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries) {
 	for (int i = 0; i < MAX_PARTICLES_2; i++) {
