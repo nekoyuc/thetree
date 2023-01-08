@@ -1,10 +1,19 @@
 #pragma once 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <glm/glm.hpp>
 #include <GL/glew.h>
 #include <vector>
 #include <future>
 #include "TunableParameters.h"
 #include <unordered_set>
+
+struct DensityCell {
+	float density = 0.0f;
+	glm::vec3 normal = glm::vec3(0,0,0);
+	int stamp_number = 0;
+};
 
 class DensityGrid {
 public:
@@ -28,14 +37,14 @@ public:
 	//double evaluate(glm::vec3 pos);
 
 	std::future<std::vector<Entry>> profile();
-	void doneProfiling(); // turn off recordParticleAt when true
+	//void doneProfiling(); // turn off recordParticleAt when true
 	bool mDontRecord = false;
 
 	void stamp(int grid_x, int grid_y, int grid_z, float plusMinus = 1.0f, int spread = STAMP_SPREAD, float maxStamp = MAX_STAMP);
 	void findGridLocation(glm::vec3 pos, int& x, int& y, int& z);
 
 private:
-	GLfloat grid[GRID_NUM][GRID_NUM][GRID_NUM];
+	DensityCell grid[GRID_NUM][GRID_NUM][GRID_NUM];
 };
 
 /*
