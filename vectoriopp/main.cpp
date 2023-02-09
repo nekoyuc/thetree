@@ -144,7 +144,15 @@ int main()
   bool waitingOnFuture = false;
   bool drawPlaneRender = true;
 
-
+  printf("\n**press WS to move draw plane\n");
+  printf("**press AD to change field of view\n");
+  printf("**press QE to change profiling threshold, default = 400, press left shift to speed up\n");
+  printf("**press X to change trail visibility\n");
+  printf("**press C to change draw plane visibility\n");
+  printf("**press Z to make density profile\n");
+  printf("**press SPACE to erase particles\n");
+  printf("**press 1 to flip rotation field\n\n");
+  printf("current rotation direction is %f\n\n", lineField.rotation_direction);
 
   do {
     // Clear the screen
@@ -183,7 +191,7 @@ int main()
             hasDensityVisualization = true;
             //densityGrid->doneProfiling();
             waitingOnFuture = false;
-            printf("done profiling\n");
+            printf("done profiling\n\n");
         }
     }
 
@@ -195,28 +203,37 @@ int main()
         drawPlane.mPosition += glm::vec3(0.0f, 0.0f, 0.05f);
     }
 
-    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
         particleSystem->showTrail = !particleSystem->showTrail;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         drawPlaneRender = !drawPlaneRender;
     }
 
-    if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && !waitingOnFuture) {
+    if ((glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) && !waitingOnFuture) {
         futureProfiling = densityGrid->profile();
         waitingOnFuture = true;
-        /*
-        for (int xi = 0; xi < 576; xi++) {
-            for (int yi = 0; yi < 576; yi++) {
-                for (int zi = 0; zi < 576; zi++) {
-                    if (densityGrid->grid[xi][yi][zi] > 0) {
-                        printf("grid value is %f\n", densityGrid->grid[xi][yi][zi]);
-                    }
-                }
-            }
-        }
-        */
+    }
+
+    if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) != GLFW_PRESS)) {
+        densityGrid->threshold -= 0.5f;
+        printf("threshold is %f\n", densityGrid->threshold);
+    }
+
+    if ((glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) != GLFW_PRESS)) {
+        densityGrid->threshold += 0.5f;
+        printf("threshold is %f\n", densityGrid->threshold);
+    }
+
+    if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
+        densityGrid->threshold -= 5.0f;
+        printf("threshold is %f\n", densityGrid->threshold);
+    }
+
+    if ((glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
+        densityGrid->threshold += 5.0f;
+        printf("threshold is %f\n", densityGrid->threshold);
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
@@ -226,7 +243,10 @@ int main()
         particleSystem->eraseOn = false;
     }
   
-
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+        lineField.rotation_direction *= -1.0f;
+        printf("\n\ncurrent rotation direction is %f", lineField.rotation_direction);
+    }
 
     // Swap buffers
     glfwSwapBuffers(window);

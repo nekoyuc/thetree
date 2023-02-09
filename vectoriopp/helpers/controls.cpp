@@ -137,6 +137,7 @@ void computeMatricesFromInputs(){
     
 	//direction = -position; // normalize?
 	// End old position code
+	/*
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		sphereRadius -= 0.1;
 	}
@@ -144,6 +145,7 @@ void computeMatricesFromInputs(){
     if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS){
 		sphereRadius += 0.1;
 	}
+	*/
 
 	//spherical coordinates
 	//position[0] = sphereRadius * sin(horizontalAngle) * cos(verticalAngle);

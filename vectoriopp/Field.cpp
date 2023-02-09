@@ -18,25 +18,6 @@ void LineField::recordLine(float x1, float y1, float z1, float x2, float y2, flo
 
     mNumVertices += 6;
 }
-//
-//
-// states
-//
-//
-
-// scope
-#define MAX_DISTANCE 2.0f
-
-// field scales
-#define ATTRACTOR_SCALE 0.3f
-#define ROTATION_SCALE 5.50f
-#define DRAG_SCALE 0.8f
-
-//
-//
-// computing fields
-//
-//
 
 // rotation field
 static glm::vec3 computeRotationField(glm::vec3 particlePos, glm::vec3 linePos, glm::vec3 direction) {
@@ -44,7 +25,7 @@ static glm::vec3 computeRotationField(glm::vec3 particlePos, glm::vec3 linePos, 
     auto dot_pl_d = p_to_l[0] * direction[0] + p_to_l[1] * direction[1] + p_to_l[2] * direction[2];
     auto dot_d_d = direction[0] * direction[0] + direction[1] * direction[1] + direction[2] * direction[2];
 
-    float a = dot_pl_d / dot_d_d;
+    float a = dot_d_d != 0 ? dot_pl_d / dot_d_d : 1;
     float projection0 = direction[0] * a;
     float projection1 = direction[1] * a;
     float projection2 = direction[2] * a;
@@ -81,7 +62,7 @@ glm::vec3 LineField::sampleField(float x1, float y1, float z1) {
         glm::vec3 lineCenter = (closeStart + closeEnd) * 0.5f;
         glm::vec3 attraction = (lineCenter - samplePos);
         result += attraction*ATTRACTOR_SCALE
-            + computeRotationField(samplePos, lineCenter, closeEnd-closeStart)*ROTATION_SCALE
+            + computeRotationField(samplePos, lineCenter, rotation_direction * (closeEnd-closeStart))*ROTATION_SCALE
             + DRAG_SCALE*(closeEnd-closeStart);
     }
     // no line center

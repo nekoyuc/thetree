@@ -9,7 +9,7 @@
 
 class ParticleSystem {
 public:
-    ParticleSystem(DensityGrid* df = nullptr);
+    ParticleSystem(DensityGrid* df = nullptr, int maxParticles = 10000);
     ~ParticleSystem();
 
     struct Particle { // inner class
@@ -61,6 +61,7 @@ public:
     glm::vec3 eraseRay = glm::vec3(0.0f, 0.0f, -1.0f);
 
 protected:
+    const int mMaxParticles;
 
     DensityGrid* mDensityGrid;
 
@@ -71,15 +72,15 @@ protected:
     GLuint mViewProjMatrixId;
     GLuint mTextureId;
     GLuint mTexture;
-    GLfloat mParticlePositionSizeData[MAX_PARTICLES*4];
-    GLubyte mParticleColorData[MAX_PARTICLES*4];
+    GLfloat* mParticlePositionSizeData;
+    GLubyte* mParticleColorData;
     GLuint mBillboardVertexBuffer;
     GLuint mParticlesPositionBuffer;
     GLuint mParticlesColorBuffer;
 
     // Lines
-    Particle mParticles[MAX_PARTICLES];
-    int mLastUsedParticle;
+    Particle* mParticles;
+    int mLastUsedParticle = 0;
     int mParticlesCount;
 
     LineRenderer* mTrailRenderer;

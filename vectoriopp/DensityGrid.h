@@ -25,7 +25,7 @@ public:
 		Entry(float xin, float yin, float zin) : x(xin), y(yin), z(zin) {}
 	};
 
-	const float ROOM_W = 12.0f;
+	const float ROOM_W = 6.0f;
 	const float ROOM_D = 6.0f;
 	const float ROOM_H = 6.0f;
 	
@@ -43,6 +43,7 @@ public:
 	void stamp(int grid_x, int grid_y, int grid_z, float plusMinus = 1.0f, int spread = STAMP_SPREAD, float maxStamp = MAX_STAMP);
 	void findGridLocation(glm::vec3 pos, int& x, int& y, int& z);
 
+	float threshold = 400.0f;
 private:
 	DensityCell grid[GRID_NUM][GRID_NUM][GRID_NUM];
 };

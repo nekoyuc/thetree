@@ -32,11 +32,14 @@ static const GLfloat g_vertex_buffer_data[] = {
 };
 
 
-ParticleSystem::ParticleSystem(DensityGrid* densityGrid) {
+ParticleSystem::ParticleSystem(DensityGrid* densityGrid, int maxParticles) : mMaxParticles(maxParticles) {
 	mDensityGrid = densityGrid;
-	mTrailRenderer = new LineRenderer(MAX_PARTICLES * PARTICLE_HISTORY_LENGTH * 6);
+	mTrailRenderer = new LineRenderer(mMaxParticles * PARTICLE_HISTORY_LENGTH * 6);
 	mTrailRenderer->mColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-
+	mParticlePositionSizeData = (GLfloat*)malloc(sizeof(GLfloat) * (mMaxParticles * 4));
+	mParticleColorData = (GLubyte*)malloc(sizeof(GLubyte) * (mMaxParticles * 4));
+	mParticles = (Particle*)malloc(sizeof(Particle) * mMaxParticles);
+	//mParticles = (Particle*) new Particle[mMaxParticles];
 	init();
 }
 
@@ -48,10 +51,13 @@ ParticleSystem::~ParticleSystem() {
   glDeleteProgram(mProgramId);
   glDeleteTextures(1, &mTexture);
   glDeleteVertexArrays(1, &mVertexArrayId);
+  free(mParticlePositionSizeData);
+  free(mParticleColorData);
+  //delete mParticles;
 }
 
 int ParticleSystem::findUnusedParticle(){
-  for(int i=mLastUsedParticle; i<MAX_PARTICLES; i++){
+  for(int i=mLastUsedParticle; i<mMaxParticles; i++){
     if (mParticles[i].life < 0){
       mLastUsedParticle = i;
       return i;
@@ -67,7 +73,7 @@ int ParticleSystem::findUnusedParticle(){
 }
 
 void ParticleSystem::sortParticles(){
-	std::sort(&mParticles[0], &mParticles[MAX_PARTICLES]);
+	std::sort(&mParticles[0], &mParticles[mMaxParticles]);
 }
 
 void ParticleSystem::init() {
@@ -84,9 +90,9 @@ void ParticleSystem::init() {
   // fragment shader
   mTextureId  = glGetUniformLocation(mProgramId, "myTextureSampler");
 	
-  static GLfloat* mParticlePositionSizeData = new GLfloat[MAX_PARTICLES * 4];
-  static GLubyte* mParticleColorData = new GLubyte[MAX_PARTICLES * 4];
-  for(int i=0; i<MAX_PARTICLES; i++){
+  //static GLfloat* mParticlePositionSizeData = new GLfloat[mMaxParticles * 4];
+  //static GLubyte* mParticleColorData = new GLubyte[mMaxParticles * 4];
+  for(int i=0; i<mMaxParticles; i++){
     mParticles[i].life = -1.0f;
     mParticles[i].cameraDistance = -1.0f;
   }
@@ -101,13 +107,13 @@ void ParticleSystem::init() {
   glGenBuffers(1, &mParticlesPositionBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
   // Initialize with empty (NULL) buffer : it will be updated later, each frame.
-  glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, mMaxParticles * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
   // The VBO containing the colors of the particles
   glGenBuffers(1, &mParticlesColorBuffer);
   glBindBuffer(GL_ARRAY_BUFFER, mParticlesColorBuffer);
   // Initialize with empty (NULL) buffer : it will be updated later, each frame.
-  glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, mMaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 }
 
 void ParticleSystem::Particle::recordHistory(const glm::vec3& position) {
@@ -155,7 +161,7 @@ void ParticleSystem::update(double delta, Field* field) {
 			  (rand() % 2000 - 1000.0f) / 1000.0f,
 			  (rand() % 2000 - 1000.0f) / 1000.0f
 		  );
-		  mParticles[particleIndex].speed = (maindir + randomdir * SPREAD) / 2.0f;
+		  mParticles[particleIndex].speed = (maindir + randomdir * INIT_SPREAD) / 2.0f;
 		  // Very bad way to generate a random color
 		  mParticles[particleIndex].r = rand() % 256;
 		  mParticles[particleIndex].g = rand() % 256;
@@ -170,21 +176,25 @@ void ParticleSystem::update(double delta, Field* field) {
   mParticlesCount = 0;
   mTrailCount = 0;
   mTrailRenderer->mNumVertices = 0;
-  for (int i = 0; i < MAX_PARTICLES; i++) {
+  for (int i = 0; i < mMaxParticles; i++) {
 	  Particle& p = mParticles[i]; // shortcut
 	  if (p.pos.y < 0.0f || p.pos.x > 3 || p.pos.z > 3 || p.pos.x < -3 || p.pos.z < -3) {
 		  p.life = 0.0f;
 	  }
 	  
 	  if (eraseOn == true) {
-		  if (p.life <= 0.0f) continue;
+		  if (p.life <= 0.0f) {
+			  p.cameraDistance = -1.0f;
+			  continue;
+		  }
 	      glm:vec3 PoToCa = getCameraPosition() - p.pos;  
 		  mCrossProductLength = glm::length(glm::vec3(
 			  eraseRay[1] * PoToCa[2] - eraseRay[2] * PoToCa[1],
 			  eraseRay[2] * PoToCa[0] - eraseRay[0] * PoToCa[2],
 			  eraseRay[0] * PoToCa[1] - eraseRay[1] * PoToCa[0]
 		  ));	  
-		  //printf("eraseRay is %f, %f, %f\n", eraseRay[0], eraseRay[1], eraseRay[2]);
+
+		  // destamp
 		  if (mCrossProductLength < ERASE_TOLERANCE) {
 			  int trailLength = 0;
 			  if (p.currentHistoryPosition >= PARTICLE_HISTORY_LENGTH) {
@@ -199,27 +209,24 @@ void ParticleSystem::update(double delta, Field* field) {
 					  int x, y, z;
 					  mDensityGrid->findGridLocation(p.history[i], x, y, z);
 					  mDensityGrid->stamp(x, y, z, -1.0f);
-					  printf("destamp %d, %d, %d\n", x, y, z);
 				  }
 			  }
 			  p.life = 0.0f;
 		  }
-
 	  }
+
 	  if (p.life > 0.0f) {
-		  // Decrease life
-		//p.life -= delta;
-		  if (glm::length(p.speed) > 1.0f) {
+
+		  // particles only keep moving above certain speed
+		  if (glm::length(p.speed) > MIN_SPEED) {
 			  p.speed = MAINTAIN_SCALE * p.speed
 				  + ACCELERATION_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
 				  + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
-			  //p.speed += 10.0f * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
 
 			  p.pos += //ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
 				  p.speed * (float)delta;
 
-			  //  printf("speed is %f\n", glm::length(p.speed));
-					  //+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2])); // Field
+			  // stamp
 			  if (mDensityGrid != nullptr) {
 				  //mDensityGrid->recordParticleAt(p.pos);
 				  //if (mDensityGrid->mDontRecord == false) {
@@ -231,6 +238,7 @@ void ParticleSystem::update(double delta, Field* field) {
 			  }
 			  p.recordHistory(p.pos);
 		  }
+
 		  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
 		  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
 		  mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
@@ -240,7 +248,6 @@ void ParticleSystem::update(double delta, Field* field) {
 		  mParticleColorData[4 * mParticlesCount + 2] = p.b;
 		  mParticleColorData[4 * mParticlesCount + 3] = p.a;		  
 
-		  //p.recordHistory(p.pos);
 		  p.cameraDistance = glm::length(p.pos - getCameraPosition());
 			  // Fill the GPU buffer
 			  
@@ -279,11 +286,11 @@ void ParticleSystem::update(double delta, Field* field) {
   
   sortParticles();
   glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
-  glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
+  glBufferData(GL_ARRAY_BUFFER, mMaxParticles * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
   glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLfloat) * 4, mParticlePositionSizeData);
 
   glBindBuffer(GL_ARRAY_BUFFER, mParticlesColorBuffer);
-  glBufferData(GL_ARRAY_BUFFER, MAX_PARTICLES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
+  glBufferData(GL_ARRAY_BUFFER, mMaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
   glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLubyte) * 4, mParticleColorData);
 
   mTrailRenderer->uploadToGPU();
