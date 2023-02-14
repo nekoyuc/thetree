@@ -67,7 +67,6 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 	//mDontRecord = true;
 	return std::async(std::launch::async, [&]() {
 		int maxLocations = 100000;
-		//int currLocations = 0;
 		std::vector<Entry> profileLocations;
 
 		system("rm dots.txt");
@@ -86,8 +85,6 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 						dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 							grid[xi][yi][zi].normal[0], grid[xi][yi][zi].normal[1], grid[xi][yi][zi].normal[2],
 							G2C(xi), G2C(yi), G2C(zi));
-						//printf("entering density value is %f\n", grid[xi][yi][zi]);
-						//currLocations++;
 						if (profileLocations.size() > maxLocations) {
 							return profileLocations;
 						}
@@ -100,36 +97,35 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 						dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 							grid[xi][yi][zi].normal[0], grid[xi][yi][zi].normal[1], grid[xi][yi][zi].normal[2],
 							G2C(xi), G2C(yi), G2C(zi));
-						//printf("exiting density value is %f\n", grid[xi][yi][zi]);
 						if (profileLocations.size() > maxLocations) {
 							return profileLocations;
 						}
 						continue;
 					}
 					if (start == true && grid[xi][yi][zi].density > threshold) {
-						if (grid[xi][yi][zi + 1].density <= threshold && zi + 1 < GRID_NUM) {
-							profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C(zi + 1)));
+						if ((zi + 1 < GRID_NUM) && (grid[xi][yi][zi + 1].density <= threshold)) {
+							profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C((float)(zi + 1))));
 							dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 								grid[xi][yi][zi + 1].normal[0], grid[xi][yi][zi + 1].normal[1], grid[xi][yi][zi + 1].normal[2],
-								G2C(xi), G2C(yi), G2C(zi + 1));
+								G2C(xi), G2C(yi), G2C((float)(zi + 1)));
 						}
-						else if (grid[xi][yi][zi - 1].density <= threshold && zi - 1 >= 0) {
-							profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C(zi - 1)));
+						else if ((zi -1) >= 0 && (grid[xi][yi][zi - 1].density <= threshold)) {
+							profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C((float)(zi - 1))));
 							dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 								grid[xi][yi][zi - 1].normal[0], grid[xi][yi][zi - 1].normal[1], grid[xi][yi][zi - 1].normal[2],
-								G2C(xi), G2C(yi), G2C(zi - 1));
+								G2C(xi), G2C(yi), G2C((float)(zi - 1)));
 						}
-						if (grid[xi][yi + 1][zi].density <= threshold && yi + 1 < GRID_NUM) {
-							profileLocations.push_back(Entry(G2C(xi), G2C(yi + 1), G2C(zi)));
+						if ((yi + 1 < GRID_NUM) && (grid[xi][yi + 1][zi].density <= threshold)) {
+							profileLocations.push_back(Entry(G2C(xi), G2C((float)(yi + 1)), G2C(zi)));
 							dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 								grid[xi][yi + 1][zi].normal[0], grid[xi][yi + 1][zi].normal[1], grid[xi][yi + 1][zi].normal[2],
-								G2C(xi), G2C(yi + 1), G2C(zi));
+								G2C(xi), G2C((float)(yi + 1)), G2C(zi));
 						}
-						else if (grid[xi][yi - 1][zi].density <= threshold && yi - 1 >= 0) {
-							profileLocations.push_back(Entry(G2C(xi), G2C(yi - 1), G2C(zi)));
+						else if ((yi -1 >= 0) && (grid[xi][yi - 1][zi].density <= threshold)) {
+							profileLocations.push_back(Entry(G2C(xi), G2C((float)(yi - 1)), G2C(zi)));
 							dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 								grid[xi][yi - 1][zi].normal[0], grid[xi][yi - 1][zi].normal[1], grid[xi][yi - 1][zi].normal[2],
-								G2C(xi), G2C(yi - 1), G2C(zi));
+								G2C(xi), G2C((float)(yi - 1)), G2C(zi));
 						}
 					}
 				}
