@@ -61,9 +61,9 @@ glm::vec3 LineField::sampleField(float x1, float y1, float z1) {
     if (closestDistance < DBL_MAX) {
         glm::vec3 lineCenter = (closeStart + closeEnd) * 0.5f;
         glm::vec3 attraction = (lineCenter - samplePos);
-        result += attraction*ATTRACTOR_SCALE
-            + computeRotationField(samplePos, lineCenter, rotation_direction * (closeEnd-closeStart))*ROTATION_SCALE
-            + DRAG_SCALE*(closeEnd-closeStart);
+        result += attraction*ATTRACTOR_SCALE * ((rand() % 2000) / 50000.0f + 0.98f)
+            + computeRotationField(samplePos, lineCenter, rotation_direction * (closeEnd-closeStart))*ROTATION_SCALE * ((rand() % 2000) / 50000.0f + 0.98f)
+            + DRAG_SCALE*(closeEnd-closeStart) * ((rand() % 2000) / 50000.0f + 0.98f);
     }
     // no line center
     return result;
