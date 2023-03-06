@@ -20,7 +20,7 @@
 // particle movement
 #define MAINTAIN_SCALE 0.55f // default is 0.5
 #define FIELD_SCALE 7.0f
-#define ACCELERATION_SCALE 0.02f
+#define GRAVITY_SCALE 0.01f
 #define MIN_SPEED 0.4f
 
 // fields
@@ -28,4 +28,4 @@
 #define MAX_DISTANCE 3.0f
 #define ATTRACTOR_SCALE 0.4f
 #define ROTATION_SCALE 5.5f
-#define DRAG_SCALE 1.7f
+#define DRAG_SCALE 1.9f

@@ -220,7 +220,7 @@ void ParticleSystem::update(double delta, Field* field) {
 		  // particles only keep moving above certain speed
 		  if (glm::length(p.speed) > MIN_SPEED && p.currentHistoryPosition <= 30) {
 			  p.speed = MAINTAIN_SCALE * p.speed
-				  + ACCELERATION_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
+				  + GRAVITY_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
 				  + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
 
 			  p.pos += //ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
