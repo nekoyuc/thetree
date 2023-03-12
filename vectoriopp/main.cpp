@@ -110,7 +110,7 @@ int main()
   ParticleSystem* particleSystem = new ParticleSystem(densityGrid);
 
   CameraFacingTriangles drawPlane(&plane_data[0], 18);
-  drawPlane.mPosition = glm::vec3(0.0f, 0.0f, -3.0f);
+  drawPlane.mPosition = glm::vec3(0.0f, 0.0f, -10.0f);
   drawPlane.mColor = glm::vec4(0.9, 0.9, 0.9, 0.4);
 
   struct Plane : public ColoredTriangles {

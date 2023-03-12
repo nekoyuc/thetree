@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <math.h>
 
 #include <GL/glew.h>
 
@@ -144,7 +145,7 @@ void ParticleSystem::update(double delta, Field* field) {
   if (newparticles > (int)(0.016f*newParticles))
     newparticles = (int)(0.008f*newParticles); // maximum of new particles is 4 per millisecond
 
-  delta /= 5.0;
+  delta /= 10.0;
 
   // Create new particles
   if (addParticle == true) {
@@ -224,7 +225,11 @@ void ParticleSystem::update(double delta, Field* field) {
 				  + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
 
 			  p.pos += //ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
-				  p.speed * (float)delta;
+				  p.speed * (float)delta
+				  + glm::vec3((float)sin(p.pos[0]*10.0f) * 0.01f,
+					  (float)sin(p.pos[0] * 10.0f) * (float)(cos(p.pos[2] * 10.0f)) * 0.01f,
+					  (float)(cos(p.pos[2] * 10.0f)) * 0.01f)
+				  ;
 
 			  // stamp
 			  if (mDensityGrid != nullptr) {

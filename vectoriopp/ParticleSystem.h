@@ -9,7 +9,7 @@
 
 class ParticleSystem {
 public:
-    ParticleSystem(DensityGrid* df = nullptr, int maxParticles = 10000);
+    ParticleSystem(DensityGrid* df = nullptr, int maxParticles = 12000);
     ~ParticleSystem();
 
     struct Particle { // inner class

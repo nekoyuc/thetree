@@ -3,16 +3,23 @@
 #include <future>
 #include "TunableParameters.h"
 
-#define CHECK_COORD(c) if (abs(c) > ROOM_W/2.0f) { return; }
+#define CHECK_COORD_XZ(c) if (abs(c) > ROOM_W/2.0f) { return; }
+#define CHECK_COORD_Y(c) if ((c < 0.0f) || (c > ROOM_W)) { return; }
 // Make sure points are in room scope
-#define COORD2GRID(c)  (int)((c + ROOM_W/2.0f) * (GRID_NUM/(float)ROOM_W))
 
+#define COORD2GRID_XZ(c) (int)((c + ROOM_W/2.0f) * (GRID_NUM/(float)ROOM_W))
+#define COORD2GRID_Y(c) (int)(c * (GRID_NUM/(float)ROOM_W))
 // Returns the indices in to the grid array corresponding to a given pos
+
+#define G2C_XZ(g) (((g/((float)GRID_NUM))*ROOM_W)-ROOM_W/2.0f)
+#define G2C_Y(g) (g/((float)GRID_NUM)*ROOM_W)
+// Returns coordinates from indices
+
 void DensityGrid::findGridLocation(glm::vec3 pos, int& x, int& y, int& z) {
-	 CHECK_COORD(pos[0]); CHECK_COORD(pos[1]); CHECK_COORD(pos[2]);
-	 x = COORD2GRID(pos[0]);
-	 y = COORD2GRID(pos[1]);
-	 z = COORD2GRID(pos[2]);
+	 CHECK_COORD_XZ(pos[0]); CHECK_COORD_Y(pos[1]); CHECK_COORD_XZ(pos[2]);
+	 x = COORD2GRID_XZ(pos[0]);
+	 y = COORD2GRID_Y(pos[1]);
+	 z = COORD2GRID_XZ(pos[2]);
 }
 
 // Record a stamp at given grid indices
@@ -62,7 +69,7 @@ void DensityGrid::doneProfiling() {
 }
 */
 
-#define G2C(g) (((g/((float)GRID_NUM))*ROOM_W)-ROOM_W/2.0f)
+
 std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 	//mDontRecord = true;
 	return std::async(std::launch::async, [&]() {
@@ -81,10 +88,10 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 				for (int xi = 0; xi < GRID_NUM; xi++) {
 					if (start == false && grid[xi][yi][zi].density > threshold) {
 						start = true;
-						profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C(zi)));
+						profileLocations.push_back(Entry(G2C_XZ(xi), G2C_Y(yi), G2C_XZ(zi)));
 						dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 							grid[xi][yi][zi].normal[0], grid[xi][yi][zi].normal[1], grid[xi][yi][zi].normal[2],
-							G2C(xi), G2C(yi), G2C(zi));
+							G2C_XZ(xi), G2C_Y(yi), G2C_XZ(zi));
 						if (profileLocations.size() > maxLocations) {
 							return profileLocations;
 						}
@@ -93,10 +100,10 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 
 					if (start == true && grid[xi][yi][zi].density <= threshold) {
 						start = false;
-						profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C(zi)));
+						profileLocations.push_back(Entry(G2C_XZ(xi), G2C_Y(yi), G2C_XZ(zi)));
 						dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 							grid[xi][yi][zi].normal[0], grid[xi][yi][zi].normal[1], grid[xi][yi][zi].normal[2],
-							G2C(xi), G2C(yi), G2C(zi));
+							G2C_XZ(xi), G2C_Y(yi), G2C_XZ(zi));
 						if (profileLocations.size() > maxLocations) {
 							return profileLocations;
 						}
@@ -104,28 +111,28 @@ std::future<std::vector<DensityGrid::Entry>> DensityGrid::profile() {
 					}
 					if (start == true && grid[xi][yi][zi].density > threshold) {
 						if ((zi + 1 < GRID_NUM) && (grid[xi][yi][zi + 1].density <= threshold)) {
-							profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C((float)(zi + 1))));
+							profileLocations.push_back(Entry(G2C_XZ(xi), G2C_Y(yi), G2C_XZ((float)(zi + 1))));
 							dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 								grid[xi][yi][zi + 1].normal[0], grid[xi][yi][zi + 1].normal[1], grid[xi][yi][zi + 1].normal[2],
-								G2C(xi), G2C(yi), G2C((float)(zi + 1)));
+								G2C_XZ(xi), G2C_Y(yi), G2C_XZ((float)(zi + 1)));
 						}
 						else if ((zi -1) >= 0 && (grid[xi][yi][zi - 1].density <= threshold)) {
-							profileLocations.push_back(Entry(G2C(xi), G2C(yi), G2C((float)(zi - 1))));
+							profileLocations.push_back(Entry(G2C_XZ(xi), G2C_Y(yi), G2C_XZ((float)(zi - 1))));
 							dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 								grid[xi][yi][zi - 1].normal[0], grid[xi][yi][zi - 1].normal[1], grid[xi][yi][zi - 1].normal[2],
-								G2C(xi), G2C(yi), G2C((float)(zi - 1)));
+								G2C_XZ(xi), G2C_Y(yi), G2C_XZ((float)(zi - 1)));
 						}
 						if ((yi + 1 < GRID_NUM) && (grid[xi][yi + 1][zi].density <= threshold)) {
-							profileLocations.push_back(Entry(G2C(xi), G2C((float)(yi + 1)), G2C(zi)));
+							profileLocations.push_back(Entry(G2C_XZ(xi), G2C_Y((float)(yi + 1)), G2C_XZ(zi)));
 							dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 								grid[xi][yi + 1][zi].normal[0], grid[xi][yi + 1][zi].normal[1], grid[xi][yi + 1][zi].normal[2],
-								G2C(xi), G2C((float)(yi + 1)), G2C(zi));
+								G2C_XZ(xi), G2C_Y((float)(yi + 1)), G2C_XZ(zi));
 						}
 						else if ((yi -1 >= 0) && (grid[xi][yi - 1][zi].density <= threshold)) {
-							profileLocations.push_back(Entry(G2C(xi), G2C((float)(yi - 1)), G2C(zi)));
+							profileLocations.push_back(Entry(G2C_XZ(xi), G2C_Y((float)(yi - 1)), G2C_XZ(zi)));
 							dprintf(writeFd, "vn %f %f %f\nv %f %f %f\n",
 								grid[xi][yi - 1][zi].normal[0], grid[xi][yi - 1][zi].normal[1], grid[xi][yi - 1][zi].normal[2],
-								G2C(xi), G2C((float)(yi - 1)), G2C(zi));
+								G2C_XZ(xi), G2C_Y((float)(yi - 1)), G2C_XZ(zi));
 						}
 					}
 				}
