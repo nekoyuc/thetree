@@ -65,10 +65,9 @@ void LineRenderer::uploadToGPU() {
     glBufferData(GL_ARRAY_BUFFER, mNumVertices * sizeof(GLfloat), mVertexBufferData, GL_STREAM_DRAW);
 }
 
-void LineRenderer::render() {
+void LineRenderer::render(const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix) {
   mModelMatrix = glm::mat4(1.0);
-  glm::mat4 ProjectionMatrix = getProjectionMatrix();
-  glm::mat4 ViewProjectionMatrix(ProjectionMatrix*getViewMatrix());
+  glm::mat4 ViewProjectionMatrix(ProjectionMatrix*ViewMatrix);
   // Use our shader
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

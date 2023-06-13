@@ -91,7 +91,7 @@ void Vectorio::render(const glm::mat4& projection, const glm::mat4& view) {
 // Control whether lines go in front of plane (commented means lines are always on top)
 //    glEnable(GL_DEPTH_TEST);
 
-    mLineRenderer->render();
+    mLineRenderer->render(projection, view);
 }
 
 float Vectorio::getDrawPlaneDistance() {

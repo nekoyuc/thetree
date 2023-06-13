@@ -379,6 +379,6 @@ void ParticleSystem::render(const glm::mat4& ProjectionMatrix, const glm::mat4& 
   glDisableVertexAttribArray(1);
   glDisableVertexAttribArray(2);  
 
-  mTrailRenderer->render();
+  mTrailRenderer->render(ProjectionMatrix, ViewMatrix);
 }
 
