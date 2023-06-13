@@ -27,6 +27,7 @@ using namespace glm;
 #include "LineRenderer.h"
 #include "MouseHandler.h"
 #include "ParticleSystem.h"
+#include "Vectorio.h"
 
 
 GLfloat g_single_triangle_data[] = {
@@ -46,14 +47,7 @@ GLfloat g_sample_line_data[] = {
 };
 */
 
-GLfloat plane_data[] = {
--3.0f, -3.0f, 0.0f,
-3.0f, -3.0f, 0.0f,
-3.0f,  3.0f, 0.0f,
--3.0f, -3.0f, 0.0f,
-3.0f, 3.0f, 0.0f,
--3.0f, 3.0f, 0.0f
-};
+
 
 int main()
 {
@@ -98,45 +92,10 @@ int main()
   glfwPollEvents();
   glfwSetCursorPos(window, 1024/2, 768/2);
   
-  // Light blue background
-  glClearColor(0.7f, 0.8f, 0.9f, 0.0f);
-  
-  // Enable depth test
-  glEnable(GL_DEPTH_TEST);
-  // Accept fragment if it closer to the camera than the former one
-  glDepthFunc(GL_LESS);
-
-  DensityGrid* densityGrid = new DensityGrid();
-  ParticleSystem* particleSystem = new ParticleSystem(densityGrid);
-
-  CameraFacingTriangles drawPlane(&plane_data[0], 18);
-  drawPlane.mPosition = glm::vec3(0.0f, 0.0f, -10.0f);
-  drawPlane.mColor = glm::vec4(0.9, 0.9, 0.9, 0.4);
-
-  struct Plane : public ColoredTriangles {
-      glm::mat4 mModelMatrix = glm::mat4(1.0f);
-      Plane() : ColoredTriangles(&plane_data[0], 18) {
-          mModelMatrix = glm::rotate(mModelMatrix, (float)(M_PI / 2.0f), glm::vec3(1, 0, 0));
-          mColor = glm::vec4(0.2, 0.2, 0.2, 0.97);
-      }
-      glm::mat4 getMVPMatrix() override {
-          return getProjectionMatrix() * getViewMatrix() * mModelMatrix;
-      }
-  };
-  Plane basePlane;
-
-  LineRenderer lineRenderer;
-  lineRenderer.addLine(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-  lineRenderer.addLine(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-  lineRenderer.addLine(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-
-  LineField lineField;  
-  MouseHandler mouseHandler(&lineRenderer, &lineField, particleSystem);
+  Vectorio vectorio;
+  MouseHandler mouseHandler(&vectorio);
 
   glfwSetScrollCallback(window, onScrollEvent);
-
-  auto densityVisualizer = std::make_unique<DensityViz>();
-  bool hasDensityVisualization = false;
 
 
   double lastTime = glfwGetTime();
@@ -152,7 +111,7 @@ int main()
   printf("**press Z to make density profile\n");
   printf("**press SPACE to erase particles\n");
   printf("**press 1 to flip rotation field\n\n");
-  printf("current rotation direction is %f\n\n", lineField.rotation_direction);
+  //printf("current rotation direction is %f\n\n", lineField.rotation_direction);
 
   do {
     // Clear the screen
@@ -161,34 +120,16 @@ int main()
     double delta = currentTime - lastTime; 
     lastTime = currentTime;
 
-    basePlane.render();
-    glDisable(GL_DEPTH_TEST);
 
-    if (hasDensityVisualization) {
-        densityVisualizer->render();
-    }
-
-    mouseHandler.update(window, drawPlane.mPosition.z);
-
-    particleSystem->update(delta, &lineField);
-    glDisable(GL_BLEND);
-    if (!(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)) {
-        particleSystem->render();
-    }
-    glEnable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
-
-    lineRenderer.render();
-    if (drawPlaneRender == true) {
-        drawPlane.render();
-    }
-
-   
+    mouseHandler.update(window, vectorio.getDrawPlaneDistance());
+    vectorio.update(delta);
+    
+    vectorio.render(getProjectionMatrix()*getViewMatrix());
+       
     if (waitingOnFuture) {
         auto available = futureProfiling.wait_for(std::chrono::nanoseconds(1));
         if (available == std::future_status::ready) {
-            densityVisualizer->visualizeField(futureProfiling.get());
-            hasDensityVisualization = true;
+            vectorio.visualizeField(futureProfiling.get());
             //densityGrid->doneProfiling();
             waitingOnFuture = false;
             printf("done profiling\n\n");
@@ -196,56 +137,50 @@ int main()
     }
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        drawPlane.mPosition -= glm::vec3(0.0f, 0.0f, 0.05f);
+        vectorio.moveDrawPlane(glm::vec3(0.0f, 0.0f, -0.05f));
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        drawPlane.mPosition += glm::vec3(0.0f, 0.0f, 0.05f);
+        vectorio.moveDrawPlane(glm::vec3(0.0f, 0.0f, 0.05f));
     }
 
     if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
-        particleSystem->showTrail = !particleSystem->showTrail;
+        vectorio.toggleShowTrails();
     }
 
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
-        drawPlaneRender = !drawPlaneRender;
+        vectorio.toggleRenderDrawPlane();
     }
 
     if ((glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) && !waitingOnFuture) {
-        futureProfiling = densityGrid->profile();
+        futureProfiling = vectorio.profile();
         waitingOnFuture = true;
     }
 
     if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) != GLFW_PRESS)) {
-        densityGrid->threshold -= 0.5f;
-        printf("threshold is %f\n", densityGrid->threshold);
+        vectorio.changeProfileThreshold(0.5f);
     }
 
     if ((glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) != GLFW_PRESS)) {
-        densityGrid->threshold += 0.5f;
-        printf("threshold is %f\n", densityGrid->threshold);
+        vectorio.changeProfileThreshold(-0.5f);
     }
 
     if ((glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
-        densityGrid->threshold -= 5.0f;
-        printf("threshold is %f\n", densityGrid->threshold);
+        vectorio.changeProfileThreshold(-5.0f);
     }
 
     if ((glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) && (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)) {
-        densityGrid->threshold += 5.0f;
-        printf("threshold is %f\n", densityGrid->threshold);
+        vectorio.changeProfileThreshold(5.0f);
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        particleSystem->eraseOn = true;
-    }
-    else {
-        particleSystem->eraseOn = false;
+        vectorio.setEraseOn(true);
+    } else {
+        vectorio.setEraseOn(false);
     }
   
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-        lineField.rotation_direction *= -1.0f;
-        printf("\n\ncurrent rotation direction is %f", lineField.rotation_direction);
+        vectorio.invertLineField();
     }
 
     // Swap buffers
@@ -259,7 +194,6 @@ int main()
   // Close OpenGL window and terminate GLFW
   glfwTerminate();
 
-  delete densityGrid;
   return 0;
 }
 

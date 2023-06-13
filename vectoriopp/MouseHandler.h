@@ -3,18 +3,17 @@
 #include "LineRenderer.h"
 #include "Field.h"
 #include <GLFW/glfw3.h>
-#include "ParticleSystem.h"
+
+class Vectorio;
 
 class MouseHandler {
 public:
-	MouseHandler(LineRenderer*, LineField*, ParticleSystem*);
+	MouseHandler(Vectorio*);
 	~MouseHandler() = default;
 
 	void update(GLFWwindow *window, float planeDistance);
 private:
-	LineRenderer* mLineRenderer;
-	LineField* mLineField;
-	ParticleSystem* mParticleSystem;
+	Vectorio* mVectorio;
 	glm::vec3 mLastPos;
 	bool mHasLast = false;
 };

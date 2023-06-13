@@ -3,12 +3,11 @@
 #include <GLFW/glfw3.h>
 #include "helpers/controls.hpp"
 #include "TunableParameters.h"
+#include "Vectorio.h"
 
 
-MouseHandler::MouseHandler(LineRenderer* renderer,LineField* lineField, ParticleSystem* particleSystem) {
-	mLineRenderer = renderer;
-	mLineField = lineField;
-	mParticleSystem = particleSystem;
+MouseHandler::MouseHandler(Vectorio *v) {
+	mVectorio = v;
 }
 
 inline void normalizeCoordinates(double& x, double& y) {
@@ -25,7 +24,7 @@ void MouseHandler::update(GLFWwindow* window, float worldPlaneDistance) {
 		mHasLast = false;
 	}
 	if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_3)) {
-		mParticleSystem->addParticle = false;
+		mVectorio->stopAddParticle();
 	}
 
 	double xpos;
@@ -44,7 +43,7 @@ void MouseHandler::update(GLFWwindow* window, float worldPlaneDistance) {
 	glm::vec3 mouseDirection = getCameraPosition() - rayWorld;
 	mouseDirection = glm::normalize(mouseDirection); 
 
-	mParticleSystem->eraseRay = mouseDirection;
+	mVectorio->setEraseRay(mouseDirection);
 
 	if (!glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) && !glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_3)) {
 		return;
@@ -89,8 +88,8 @@ void MouseHandler::update(GLFWwindow* window, float worldPlaneDistance) {
 
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
 		if (mHasLast) {
-			mLineRenderer->addLine(mLastPos[0], mLastPos[1], mLastPos[2], end[0], end[1], end[2]);
-			mLineField->recordLine(mLastPos[0], mLastPos[1], mLastPos[2], end[0], end[1], end[2]);
+			mVectorio->addLine(mLastPos[0], mLastPos[1], mLastPos[2], end[0], end[1], end[2]);
+			mVectorio->recordLine(mLastPos[0], mLastPos[1], mLastPos[2], end[0], end[1], end[2]);
 		}
 		mHasLast = true;
 		mLastPos = end;
@@ -98,8 +97,7 @@ void MouseHandler::update(GLFWwindow* window, float worldPlaneDistance) {
 
 
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_3)) {
-		mParticleSystem->addParticle = true;
-		mParticleSystem->newPos = end;
+		mVectorio->addParticle(end);
 	}
 	//printf("Adding line (%f, %f, %f) to (%f ,%f, %f)\n", ((xpos / SCREEN_WIDTH) - 1), ((ypos / SCREEN_HEIGHT) - 1), -1.0f,
 //		((mLastX / SCREEN_WIDTH) - 1) * 2, ((mLastY / SCREEN_HEIGHT) - 1) * 2, -1.0f);

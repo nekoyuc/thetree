@@ -20,7 +20,7 @@ using namespace glm;
 #include "helpers/controls.hpp"
 
 #include "ParticleSystem.h"
-#include "Linerenderer.h"
+#include "LineRenderer.h"
 
 #include "TunableParameters.h"
 
