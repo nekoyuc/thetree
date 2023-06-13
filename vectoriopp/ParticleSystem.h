@@ -46,7 +46,7 @@ public:
     };
 
     void update(double delta, Field* field, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix);
-    void render();
+    void render(const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix);
     void init();
 
     // for adding new particles

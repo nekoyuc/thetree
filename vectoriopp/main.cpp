@@ -123,8 +123,7 @@ int main()
 
     mouseHandler.update(window, vectorio.getDrawPlaneDistance());
     vectorio.update(delta, getProjectionMatrix(), getViewMatrix());
-    
-    vectorio.render(getProjectionMatrix()*getViewMatrix());
+    vectorio.render(getProjectionMatrix(), getViewMatrix());
        
     if (waitingOnFuture) {
         auto available = futureProfiling.wait_for(std::chrono::nanoseconds(1));

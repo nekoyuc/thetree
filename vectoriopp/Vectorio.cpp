@@ -67,7 +67,7 @@ void Vectorio::update(double delta, const glm::mat4& projectionMatrix, const glm
     mParticleSystem->update(delta, mLineField, projectionMatrix, viewMatrix);
 }
 
-void Vectorio::render(const glm::mat4& projectionViewMatrix) {
+void Vectorio::render(const glm::mat4& projection, const glm::mat4& view) {
     // Light blue background
     glClearColor(0.7f, 0.8f, 0.9f, 0.0f);
   
@@ -77,7 +77,7 @@ void Vectorio::render(const glm::mat4& projectionViewMatrix) {
     glDepthFunc(GL_LESS);
 
 
-    mBasePlane->mPVMatrix = projectionViewMatrix;
+    mBasePlane->mPVMatrix = projection*view;
     mBasePlane->render();
     if (mRenderDrawPlane) {
         mDrawPlane->render();
@@ -86,11 +86,11 @@ void Vectorio::render(const glm::mat4& projectionViewMatrix) {
     glDisable(GL_DEPTH_TEST);
 
     if (mHasDensityVisualization) {
-        mDensityVisualizer->render();
+        mDensityVisualizer->render(projection, view);
     }
 
     glDisable(GL_BLEND);
-    mParticleSystem->render();
+    mParticleSystem->render(projection, view);
     
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);

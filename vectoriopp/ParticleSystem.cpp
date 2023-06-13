@@ -299,9 +299,7 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 
 }
 
-void ParticleSystem::render() {
-  glm::mat4 ProjectionMatrix = getProjectionMatrix();
-  glm::mat4 ViewMatrix = getViewMatrix();
+void ParticleSystem::render(const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix) {
   glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
 
   
