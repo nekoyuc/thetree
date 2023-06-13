@@ -9,6 +9,7 @@
 #include <vector>
 
 class CameraFacingTriangles;
+class ColoredTriangles;
 class DensityGrid;
 class DensityViz;
 class Plane;
@@ -46,7 +47,7 @@ public:
     void setEraseOn(bool eraseOn);
 
 private:
-    CameraFacingTriangles* mDrawPlane;
+    ColoredTriangles* mDrawPlane;
     DensityGrid* mDensityGrid;
     LineField* mLineField;
     LineRenderer* mLineRenderer;

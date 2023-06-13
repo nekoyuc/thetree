@@ -39,17 +39,12 @@ ColoredTriangles::~ColoredTriangles() {
   glDeleteProgram(mProgramId);
 }
 
-glm::mat4 ColoredTriangles::getMVPMatrix() {
-  return getProjectionMatrix()*getViewMatrix();
-}
-
-void ColoredTriangles::render() {
+void ColoredTriangles::render(const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix) {
   mModelMatrix = glm::mat4(1.0);
-  glm::mat4 ProjectionMatrix = getProjectionMatrix();
   //  glm::mat4 ViewMatrix = getViewMatrix();
   //  glm::mat4 ViewProjectionMatrix = mModelMatrix * ProjectionMatrix * ViewMatrix;
   //  glm::mat4 ViewProjectionMatrix = getViewMatrix();
-  glm::mat4 ViewProjectionMatrix(getMVPMatrix());
+  glm::mat4 ViewProjectionMatrix(ProjectionMatrix*ViewMatrix);
   // Use our shader
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -71,12 +66,3 @@ void ColoredTriangles::render() {
   glDrawArrays(GL_TRIANGLES, 0, mNumElements/3); // 3 indices starting at 0 -> 1 triangle
   glDisableVertexAttribArray(0);
 }
-
-CameraFacingTriangles::CameraFacingTriangles(GLfloat* vertexBufferData, int numElements) :
-  ColoredTriangles(vertexBufferData, numElements) {
-}
-
-glm::mat4 CameraFacingTriangles::getMVPMatrix() {
-    return glm::translate(getProjectionMatrix(), mPosition);
-}
-

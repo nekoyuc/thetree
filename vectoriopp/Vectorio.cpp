@@ -30,16 +30,11 @@ struct Plane : public ColoredTriangles {
           mModelMatrix = glm::rotate(mModelMatrix, (float)(M_PI / 2.0f), glm::vec3(1, 0, 0));
           mColor = glm::vec4(0.2, 0.2, 0.2, 0.97);
       }
-      glm::mat4 getMVPMatrix() override {
-          return mPVMatrix * mModelMatrix;
-      }
-
-      glm::mat4 mPVMatrix;
 };
 
 Vectorio::Vectorio() {
     mBasePlane = new Plane();
-    mDrawPlane = new CameraFacingTriangles(&plane_data[0], 18);
+    mDrawPlane = new ColoredTriangles(&plane_data[0], 18);
     mDrawPlane->mPosition = glm::vec3(0.0f, 0.0f, -3.0f);
     mDrawPlane->mColor = glm::vec4(0.9, 0.9, 0.9, 0.4);
     mLineRenderer = new LineRenderer();
@@ -77,10 +72,10 @@ void Vectorio::render(const glm::mat4& projection, const glm::mat4& view) {
     glDepthFunc(GL_LESS);
 
 
-    mBasePlane->mPVMatrix = projection*view;
-    mBasePlane->render();
+    mBasePlane->render(projection, view*mBasePlane->mModelMatrix);
     if (mRenderDrawPlane) {
-        mDrawPlane->render();
+        mDrawPlane->render(glm::translate(projection, mDrawPlane->mPosition),
+            glm::identity<glm::mat4>());
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -93,7 +88,8 @@ void Vectorio::render(const glm::mat4& projection, const glm::mat4& view) {
     mParticleSystem->render(projection, view);
     
     glEnable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
+// Control whether lines go in front of plane (commented means lines are always on top)
+//    glEnable(GL_DEPTH_TEST);
 
     mLineRenderer->render();
 }
