@@ -15,7 +15,6 @@ public:
   void uploadToGPU();
 
   void render();
-  virtual glm::mat4 getMVPMatrix();
   GLfloat* mVertexBufferData;
   GLuint mMode = GL_LINES;
   int mNumVertices = 0;

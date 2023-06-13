@@ -42,10 +42,6 @@ LineRenderer::~LineRenderer() {
   glDeleteProgram(mProgramId);
 }
 
-glm::mat4 LineRenderer::getMVPMatrix() {
-  return getProjectionMatrix()*getViewMatrix();
-}
-
 void LineRenderer::addLine(float x1, float y1, float z1, float x2, float y2, float z2) {
     if (mNumVertices + 6 > NUM_LINES * 6) {
         printf("Out of space for lines \n");
@@ -72,7 +68,7 @@ void LineRenderer::uploadToGPU() {
 void LineRenderer::render() {
   mModelMatrix = glm::mat4(1.0);
   glm::mat4 ProjectionMatrix = getProjectionMatrix();
-  glm::mat4 ViewProjectionMatrix(getMVPMatrix());
+  glm::mat4 ViewProjectionMatrix(ProjectionMatrix*getViewMatrix());
   // Use our shader
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
