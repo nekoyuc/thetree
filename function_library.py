@@ -114,7 +114,9 @@ def addCircleToFace(faceObj, r, center):
     editMode()
     sAllMesh()
     bpy.ops.mesh.dissolve_limited()
-    return rotateToFace(actObj(), parentNor)
+    cirObj = actObj()
+    cirObj = rotateToFace(cirObj, parentNor)
+    return cirObj
 
 # return the world coordinates of an object's one vertice
 def woCo(obj, obj_vert):
@@ -193,13 +195,13 @@ def cutM(object, p_co, p_no, names):
         bpy.context.collection.objects.link(newo)
     
 # get a list of circle centers fron surface inset
-def getContainedCirCen(srfObj, t):
+def getContainedCirCen(srfObj, srfInset):
     setActObj(srfObj)
     srfObj.select_set(True)
     l0 = len(srfObj.data.vertices)
     editMode()
     sAllMesh()
-    bpy.ops.mesh.inset(thickness = t)
+    bpy.ops.mesh.inset(thickness = srfInset)
     
     # update the inset outcome in blender system
     objectMode()
@@ -230,7 +232,7 @@ def triSrf(srfObj):
 ### of tuples (objects resulted from slicing, resulted cut surface, circles contained in cut surface
 ### outputs: updated dictionary
 ###----------
-def sliceProcess(obj, p_co, p_no, name1, name2, radius, Dic):
+def sliceProcess(obj, p_co, p_no, name1, name2, radius, srfInset, Collection):
     # Create 2 halves by slicing
     cutM(obj, p_co, p_no, [name1, name2])
     fillOpen(bpy.data.objects[name1])
@@ -249,6 +251,7 @@ def sliceProcess(obj, p_co, p_no, name1, name2, radius, Dic):
     objectMode()
     bpy.data.objects.remove(bpy.context.selected_objects[0])
     
+    
     # set srf origin to (0,0,0)
     srf.select_set(True)
     setActObj(srf)
@@ -257,32 +260,36 @@ def sliceProcess(obj, p_co, p_no, name1, name2, radius, Dic):
     oriToCur()
    
     # make a copy of srf
-    bpy.ops.object.duplicate(linked=False)
-    srfCopy = bpy.context.object
+    #bpy.ops.object.duplicate(linked=False)
+    #srfCopy = bpy.context.object
         
     # get a list of circle centers
-    V = getContainedCirCen(srfCopy, 1.5)
+    # V = getContainedCirCen(srf, srfInset)
+    #V = getContainedCirCen(srfCopy, 1.5)
     
     # Create circles
     C = []
     n = 0
     Contained = []
     
+    '''
     for i in V:
         n += 1
-        c = addCircleToFace(srfCopy, radius, i)
+        c = addCircleToFace(srf, radius, i)
+        #bpy.context.collection.objects.link(c)
         c.name = obj.name + " circle " + str(n)
         C.append(c)
     
     for c in C:
-        if isContained2D(c, srf) == True:
-            Contained.append(c)
-        else:
-            bpy.data.objects.remove(c)
+        Contained.append(c)
+        #if isContained2D(c, srf) == True:
+        #    Contained.append(c)
+        #else:
+        #    bpy.data.objects.remove(c)
     
     # remove srf and srfCopy
-    bpy.data.objects.remove(srfCopy)
-    bpy.data.objects.remove(srf)
+    #bpy.data.objects.remove(srfCopy)
+    #bpy.data.objects.remove(srf)
 
     # Add extrusion
     #addCircleToFace(cir, 0.5).name = obj.name + " PinSrf"
@@ -290,9 +297,10 @@ def sliceProcess(obj, p_co, p_no, name1, name2, radius, Dic):
     
     # Add original, half 1, half 2, contained circles to dictionary
     dAllObject()
+    '''
 
-    Dic[obj.name] = [obj, bpy.data.objects[name1], bpy.data.objects[name2], Contained]
-    return Dic
+    Collection[obj.name] = [obj, bpy.data.objects[name1], bpy.data.objects[name2], Contained]
+    return Collection
 
 
 ###----------
@@ -322,7 +330,7 @@ def carveProcess(Collection, testLength, offset, extrudeLength):
             c.select_set(True)
             transformApp()
             bpy.ops.object.duplicate(linked = False)
-            c0 = bpy.context.object
+            c_2D = bpy.context.object
             dAllObject()
             setActObj(c)
 
@@ -343,7 +351,7 @@ def carveProcess(Collection, testLength, offset, extrudeLength):
                 point = mathutils.Vector(c.data.vertices[i+vertN].co)
                 if isPointInside(point, original) == False:
                     bpy.data.objects.remove(c)
-                    bpy.data.objects.remove(c0)
+                    bpy.data.objects.remove(c_2D)
                     break
                 else:
                     k += 1
@@ -365,13 +373,13 @@ def carveProcess(Collection, testLength, offset, extrudeLength):
                     point = mathutils.Vector(c.data.vertices[i + vertN * 2].co)
                     if isPointInside(point, original) == False:
                         bpy.data.objects.remove(c)
-                        bpy.data.objects.remove(c0)
+                        bpy.data.objects.remove(c_2D)
                         break
                     else:
                         l += 1
 
                 if l == vertN:
-                    CC.append([c0, c])
+                    CC.append([c_2D, c])
 
         Collection[key][3] = CC
     

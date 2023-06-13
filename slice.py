@@ -1,19 +1,25 @@
 
 Collection = {}
-objList = [bpy.data.objects["Icosphere"]]
-planeCoList = [(0,0,0.5)]
-planeNoList = [(1,1,1)]
+objList = [bpy.data.objects["mesh37-2.001"]]
+planeCoList = [(0, 0, 0.12)]
+planeNoList = [(0, 0, 1)]
 
 for i in range(len(objList)):
-    Collection = sliceProcess(objList[i], planeCoList[i], planeNoList[i], objList[i].name + " half 1",
-    objList[i].name + " half 2", 1, Collection)
+    # sliceProcess(obj, p_co, p_no, name1, name2, circle radius, srfInset, Collection)
+    # circle radius = radius of tested circles on cut surfaces
+    # srfInset = offset profile from surface edge along which centers of circles are generated
+    Collection = sliceProcess(objList[i], planeCoList[i], planeNoList[i], 
+                              objList[i].name + " half 1", objList[i].name + " half 2", 
+                              0.008, 0.004, Collection)
 
+print("collection is ")
 print(Collection)
 
-
-
-
-Collection = carveProcess(Collection, 2, 0.2, 6)
+# carveProcess(Collection, testLength, offset, extrudeLength)
+# testLength = min contained length required to legitimize a test circle
+# offset = offset from test circle to make final extrusion
+# extrudeLength = final extrusion length
+# Collection = carveProcess(Collection, 0.02, 0.004, 0.015)
 
 """
 bpy.ops.mesh.extrude_vertices_move(MESH_OT_extrude_verts_indiv={"mirror":False}, TRANSFORM_OT_translate={"value":(0, 0, 0),
