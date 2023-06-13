@@ -21,7 +21,7 @@ public:
     Vectorio();
     ~Vectorio();
 
-    void update(double delta);
+    void update(double delta, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix);
     void render(const glm::mat4& projectionViewMatrix);
 
     float getDrawPlaneDistance();

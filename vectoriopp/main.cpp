@@ -122,7 +122,7 @@ int main()
 
 
     mouseHandler.update(window, vectorio.getDrawPlaneDistance());
-    vectorio.update(delta);
+    vectorio.update(delta, getProjectionMatrix(), getViewMatrix());
     
     vectorio.render(getProjectionMatrix()*getViewMatrix());
        

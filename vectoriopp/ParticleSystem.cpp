@@ -122,10 +122,7 @@ void ParticleSystem::Particle::recordHistory(const glm::vec3& position) {
 	currentHistoryPosition++;
 }
 
-void ParticleSystem::update(double delta, Field* field) {
-  glm::mat4 ProjectionMatrix = getProjectionMatrix();
-  glm::mat4 ViewMatrix = getViewMatrix();
-
+void ParticleSystem::update(double delta, Field* field, const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix) {
   // TODO: Could remove argument
   //delta = 0.08;
   // We will need the camera's position in order to sort the particles

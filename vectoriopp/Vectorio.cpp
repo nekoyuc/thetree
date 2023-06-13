@@ -63,8 +63,8 @@ Vectorio::~Vectorio() {
     delete mDensityVisualizer;
 }
 
-void Vectorio::update(double delta) {
-    mParticleSystem->update(delta, mLineField);
+void Vectorio::update(double delta, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
+    mParticleSystem->update(delta, mLineField, projectionMatrix, viewMatrix);
 }
 
 void Vectorio::render(const glm::mat4& projectionViewMatrix) {

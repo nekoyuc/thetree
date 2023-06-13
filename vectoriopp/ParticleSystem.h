@@ -45,7 +45,7 @@ public:
       }
     };
 
-    void update(double delta, Field* field);
+    void update(double delta, Field* field, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix);
     void render();
     void init();
 
