@@ -13,6 +13,8 @@
 #include "LineRenderer.h"
 #include "ParticleSystem.h"
 
+#include <chrono>
+
 using namespace glm;
 
 GLfloat plane_data[] = {
@@ -59,13 +61,17 @@ Vectorio::~Vectorio() {
 }
 
 void Vectorio::update(double delta, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
+    printf("Update %f\n", delta);
     mParticleSystem->update(delta, mLineField, projectionMatrix, viewMatrix);
 }
 
 void Vectorio::render(const glm::mat4& projection, const glm::mat4& view) {
+    // Get current time
+    std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
     // Light blue background
     glClearColor(0.7f, 0.8f, 0.9f, 0.0f);
-  
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
     // Accept fragment if it closer to the camera than the former one
@@ -92,6 +98,10 @@ void Vectorio::render(const glm::mat4& projection, const glm::mat4& view) {
 //    glEnable(GL_DEPTH_TEST);
 
     mLineRenderer->render(projection, view);
+    // Print time in ms since start
+    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = end-start;
+    printf("Render time: %f\n", elapsed.count());
 }
 
 float Vectorio::getDrawPlaneDistance() {
@@ -137,8 +147,8 @@ std::future<std::vector<DensityGrid::Entry>> Vectorio::profile() {
     return mDensityGrid->profile();
 }
 
-void Vectorio::visualizeField(const std::vector<DensityGrid::Entry>& profile) {
-    mDensityVisualizer->visualizeField(profile);
+void Vectorio::visualizeField(const std::vector<DensityGrid::Entry>& profile, const glm::mat4& view) {
+    mDensityVisualizer->visualizeField(profile, view);
     mHasDensityVisualization = true;
 }
 

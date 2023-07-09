@@ -24,6 +24,8 @@ using namespace glm;
 
 #include "TunableParameters.h"
 
+#include <iostream>
+
 
 static const GLfloat g_vertex_buffer_data[] = { 
   -0.5f, -0.5f, 0.0f,
@@ -123,6 +125,8 @@ void ParticleSystem::Particle::recordHistory(const glm::vec3& position) {
 }
 
 void ParticleSystem::update(double delta, Field* field, const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix) {
+	// Record start time with chrono
+	auto start = std::chrono::high_resolution_clock::now();
   // TODO: Could remove argument
   //delta = 0.08;
   // We will need the camera's position in order to sort the particles
@@ -137,12 +141,14 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
   // Generate 10 new particule each millisecond,
   // but limit this to 16 ms (60 fps), or if you have 1 long frame (1sec),
   // newparticles will be huge and the next frame even longer.
-  const int newParticles = 500;
+  const int newParticles = 250;
   int newparticles = (int)(delta*newParticles); 
   if (newparticles > (int)(0.016f*newParticles))
     newparticles = (int)(0.008f*newParticles); // maximum of new particles is 4 per millisecond
 
   delta /= 10.0;
+
+  glm::vec3 cameraPosition = glm::vec3(glm::inverse(ViewMatrix)[3]);
 
   // Create new particles
   if (addParticle == true) {
@@ -176,7 +182,8 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
   mTrailRenderer->mNumVertices = 0;
   for (int i = 0; i < mMaxParticles; i++) {
 	  Particle& p = mParticles[i]; // shortcut
-	  if (p.pos.y < 0.0f || p.pos.x > 3 || p.pos.z > 3 || p.pos.x < -3 || p.pos.z < -3) {
+	  if (p.pos.y < -6.0f || p.pos.x > 6 || p.pos.z > 6 || p.pos.x < -6 || p.pos.z < -6) {
+			printf("Killing particle \n");
 		  p.life = 0.0f;
 	  }
 	  
@@ -185,7 +192,7 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 			  p.cameraDistance = -1.0f;
 			  continue;
 		  }
-	      glm:vec3 PoToCa = getCameraPosition() - p.pos;  
+	      glm:vec3 PoToCa = cameraPosition - p.pos;  
 		  mCrossProductLength = glm::length(glm::vec3(
 			  eraseRay[1] * PoToCa[2] - eraseRay[2] * PoToCa[1],
 			  eraseRay[2] * PoToCa[0] - eraseRay[0] * PoToCa[2],
@@ -217,6 +224,7 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 
 		  // particles only keep moving above certain speed
 		  if (glm::length(p.speed) > MIN_SPEED && p.currentHistoryPosition <= 30) {
+			printf("Particle has speed \n");
 			  p.speed = MAINTAIN_SCALE * p.speed
 				  + GRAVITY_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
 				  + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
@@ -250,7 +258,7 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 		  mParticleColorData[4 * mParticlesCount + 2] = p.b;
 		  mParticleColorData[4 * mParticlesCount + 3] = p.a;		  
 
-		  p.cameraDistance = glm::length(p.pos - getCameraPosition());
+		  p.cameraDistance = glm::length(p.pos - cameraPosition);
 			  // Fill the GPU buffer
 			  
 
@@ -285,8 +293,12 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 		  p.cameraDistance = -1.0f;
 	  }
   }
-  
-  sortParticles();
+  // Print time since start time with chrono
+
+
+  //sortParticles();
+
+
   glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
   glBufferData(GL_ARRAY_BUFFER, mMaxParticles * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
   glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLfloat) * 4, mParticlePositionSizeData);
@@ -294,6 +306,8 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
   glBindBuffer(GL_ARRAY_BUFFER, mParticlesColorBuffer);
   glBufferData(GL_ARRAY_BUFFER, mMaxParticles * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
   glBufferSubData(GL_ARRAY_BUFFER, 0, mParticlesCount * sizeof(GLubyte) * 4, mParticleColorData);
+
+
 
   mTrailRenderer->uploadToGPU();
 
@@ -316,7 +330,7 @@ void ParticleSystem::render(const glm::mat4& ProjectionMatrix, const glm::mat4& 
   glUniform1i(mTextureId, 0);
   
   // Same as the billboards tutorial
-  auto cameraPosition = getCameraPosition();
+  auto cameraPosition = glm::vec3(ViewMatrix[3][0], ViewMatrix[3][1], ViewMatrix[3][2]);
   auto cameraRight = glm::vec3(ViewMatrix[0][0],ViewMatrix[1][0],ViewMatrix[2][0]);
   auto cameraUp = glm::vec3(ViewMatrix[0][1],ViewMatrix[1][1], ViewMatrix[2][1]);
   glUniform3f(mCameraRightWorldspaceId, cameraRight[0], cameraRight[1], cameraRight[2]);

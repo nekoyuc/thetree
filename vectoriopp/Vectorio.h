@@ -33,7 +33,7 @@ public:
     void moveDrawPlane(const glm::vec3& diff);
     void changeProfileThreshold(float diff);
     std::future<std::vector<DensityGrid::Entry>> profile();
-    void visualizeField(const std::vector<DensityGrid::Entry>& entries);
+    void visualizeField(const std::vector<DensityGrid::Entry>& entries, const glm::mat4& viewMatrix);
     void clearFieldVisualizer();
 
 

@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <stdio.h>
 
-void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries) {
+void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries, const glm::mat4& viewMatrix) {
 	for (int i = 0; i < mMaxParticles; i++) {
 		mParticles[i].life = -1.0f;
 	}
@@ -27,7 +27,9 @@ void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries) 
 	for (int i = 0; i < mMaxParticles; i++) {
 		Particle& p = mParticles[i]; // shortcut
 		if (p.life > 0.0f) {
-			p.cameraDistance = glm::length(p.pos - getCameraPosition());
+			// Get camera position from viewMatrix
+			glm::vec3 cameraPosition = glm::vec3(glm::inverse(viewMatrix)[3]);
+			p.cameraDistance = glm::length(p.pos - cameraPosition);
 			mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
 			mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
 			mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;

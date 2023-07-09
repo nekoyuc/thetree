@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(openxr-example)
+project(vectorio_xr)
 
 if (POLICY CMP0072)
   cmake_policy (SET CMP0072 NEW)
@@ -10,6 +10,7 @@ IF (WIN32)
 ENDIF()
 
 find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
 
 IF (WIN32)
 	find_package(SDL2 REQUIRED)
@@ -21,14 +22,18 @@ ELSE()
   SET(LINUX_LIBS "Xrandr ${X11_LIBRARIES}" m)
 ENDIF()
 
-add_executable(openxr-example main.c)
+add_executable(vectorio_xr main.c)
+target_include_directories(vectorio_xr PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../")
+target_link_directories(vectorio_xr PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../")
+target_link_libraries(vectorio_xr PUBLIC vectorioxr)
+
 
 # First try openxr.pc from OpenXR SDK
 include(FindPkgConfig)
 pkg_search_module(OPENXR openxr)
 if (OPENXR_FOUND)
   MESSAGE("OpenXR found with pkg-config")
-  target_link_libraries(openxr-example PRIVATE ${OPENXR_LIBRARIES})
+  target_link_libraries(vectorio_xr PRIVATE ${OPENXR_LIBRARIES})
 
 # Second, try OpenXRConfig.cmake from OpenXR SDK
 else()
@@ -42,18 +47,18 @@ else()
      MESSAGE(FATAL_ERROR "OpenXR not found!")
   endif()
 
-  target_include_directories(openxr-example PRIVATE ${OpenXR_INCLUDE_DIR})
-  target_link_libraries(openxr-example PRIVATE OpenXR::openxr_loader)
+  target_include_directories(vectorio_xr PRIVATE ${OpenXR_INCLUDE_DIR})
+  target_link_libraries(vectorio_xr PRIVATE OpenXR::openxr_loader)
 endif()
 
-target_link_libraries(openxr-example PRIVATE ${LINUX_LIBS} ${OPENGL_LIBRARIES} ${SDL2_LIBRARIES})
-target_include_directories(openxr-example PRIVATE ${SDL2_INCLUDE_DIR} ${EXTRA_INCLUDES})
+target_link_libraries(vectorio_xr PUBLIC ${LINUX_LIBS} ${OPENGL_LIBRARIES} ${SDL2_LIBRARIES} ${GLEW_LIBRARIES})
+target_include_directories(vectorio_xr PRIVATE ${SDL2_INCLUDE_DIR} ${EXTRA_INCLUDES})
 
 if(MSVC)
-  target_compile_options(openxr-example PRIVATE /W4 /WX)
+  target_compile_options(vectorio_xr PRIVATE /W4 /WX)
 else(MSVC)
-  target_compile_options(openxr-example PRIVATE -pedantic -Wall -Wextra -Wno-unused-parameter)
+  target_compile_options(vectorio_xr PRIVATE -pedantic -Wall -Wextra -Wno-unused-parameter)
 endif(MSVC)
 
 
-install(TARGETS openxr-example RUNTIME DESTINATION bin)
+install(TARGETS vectorio_xr RUNTIME DESTINATION bin)

@@ -74,7 +74,6 @@ int main()
   }
   glfwMakeContextCurrent(window);
 
-
   // Initialize GLEW
   glewExperimental = true; // Needed for core profile
   if (glewInit() != GLEW_OK) {
@@ -82,6 +81,7 @@ int main()
     glfwTerminate();
     return -1;
   }
+  printf("Vendor %s\n", glGetString(GL_VENDOR));
 
   // Ensure we can capture the escape key being pressed below
   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -120,7 +120,7 @@ int main()
     double delta = currentTime - lastTime; 
     lastTime = currentTime;
 
-
+  printf("Delta %f \n", delta);
     mouseHandler.update(window, vectorio.getDrawPlaneDistance());
     vectorio.update(delta, getProjectionMatrix(), getViewMatrix());
     vectorio.render(getProjectionMatrix(), getViewMatrix());
@@ -128,7 +128,7 @@ int main()
     if (waitingOnFuture) {
         auto available = futureProfiling.wait_for(std::chrono::nanoseconds(1));
         if (available == std::future_status::ready) {
-            vectorio.visualizeField(futureProfiling.get());
+            vectorio.visualizeField(futureProfiling.get(), getViewMatrix());
             //densityGrid->doneProfiling();
             waitingOnFuture = false;
             printf("done profiling\n\n");
