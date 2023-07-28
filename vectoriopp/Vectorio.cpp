@@ -61,7 +61,6 @@ Vectorio::~Vectorio() {
 }
 
 void Vectorio::update(double delta, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
-    printf("Update %f\n", delta);
     mParticleSystem->update(delta, mLineField, projectionMatrix, viewMatrix);
 }
 
@@ -99,9 +98,9 @@ void Vectorio::render(const glm::mat4& projection, const glm::mat4& view) {
 
     mLineRenderer->render(projection, view);
     // Print time in ms since start
-    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
-    std::chrono::duration<double, std::milli> elapsed = end-start;
-    printf("Render time: %f\n", elapsed.count());
+    //    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+    //    std::chrono::duration<double, std::milli> elapsed = end-start;
+    //    printf("Render time: %f\n", elapsed.count());
 }
 
 float Vectorio::getDrawPlaneDistance() {

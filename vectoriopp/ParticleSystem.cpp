@@ -38,7 +38,7 @@ static const GLfloat g_vertex_buffer_data[] = {
 ParticleSystem::ParticleSystem(DensityGrid* densityGrid, int maxParticles) : mMaxParticles(maxParticles) {
 	mDensityGrid = densityGrid;
 	mTrailRenderer = new LineRenderer(mMaxParticles * PARTICLE_HISTORY_LENGTH * 6);
-	mTrailRenderer->mColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	mTrailRenderer->mColor = glm::vec4(0.2f, 0.0f, 0.8f, 0.5f);
 	mParticlePositionSizeData = (GLfloat*)malloc(sizeof(GLfloat) * (mMaxParticles * 4));
 	mParticleColorData = (GLubyte*)malloc(sizeof(GLubyte) * (mMaxParticles * 4));
 	mParticles = (Particle*)malloc(sizeof(Particle) * mMaxParticles);
@@ -88,6 +88,7 @@ void ParticleSystem::init() {
 
   mCameraRightWorldspaceId  = glGetUniformLocation(mProgramId, "CameraRight_worldspace");
   mCameraUpWorldspaceId  = glGetUniformLocation(mProgramId, "CameraUp_worldspace");
+  mTimeId = glGetUniformLocation(mProgramId, "time");
   mViewProjMatrixId = glGetUniformLocation(mProgramId, "VP");
 
   // fragment shader
@@ -224,7 +225,6 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 
 		  // particles only keep moving above certain speed
 		  if (glm::length(p.speed) > MIN_SPEED && p.currentHistoryPosition <= 30) {
-			printf("Particle has speed \n");
 			  p.speed = MAINTAIN_SCALE * p.speed
 				  + GRAVITY_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
 				  + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
@@ -310,13 +310,13 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 
 
   mTrailRenderer->uploadToGPU();
+  mTime++;
 
 }
 
 void ParticleSystem::render(const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix) {
   glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
 
-  
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   
@@ -335,6 +335,12 @@ void ParticleSystem::render(const glm::mat4& ProjectionMatrix, const glm::mat4& 
   auto cameraUp = glm::vec3(ViewMatrix[0][1],ViewMatrix[1][1], ViewMatrix[2][1]);
   glUniform3f(mCameraRightWorldspaceId, cameraRight[0], cameraRight[1], cameraRight[2]);
   glUniform3f(mCameraUpWorldspaceId, cameraUp[0], cameraUp[1], cameraUp[2]);
+  // Use number of steps in mTime to make a time float that goes smoothly from 0 to 1 and then back from 1 to 0
+  float time = (float)(mTime % 100) / 100.0f;
+  if (time > 0.5f) {
+	  time = 1.0f - time;
+  }
+  glUniform1f(mTimeId, time);
   
   glUniformMatrix4fv(mViewProjMatrixId, 1, GL_FALSE, &ViewProjectionMatrix[0][0]);
   

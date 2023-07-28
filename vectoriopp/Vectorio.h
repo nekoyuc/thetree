@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 
 #include "DensityGrid.h"
+#include "ParticleSystem.h"
 
 #include <future>
 #include <vector>
@@ -14,7 +15,6 @@ class DensityGrid;
 class DensityViz;
 class Plane;
 class LineRenderer;
-class ParticleSystem;
 class LineField;
 
 class Vectorio {
@@ -35,7 +35,6 @@ public:
     std::future<std::vector<DensityGrid::Entry>> profile();
     void visualizeField(const std::vector<DensityGrid::Entry>& entries, const glm::mat4& viewMatrix);
     void clearFieldVisualizer();
-
 
     void addLine(float x1, float y1, float z1, float x2, float y2, float z2);
     void recordLine(float x1, float y1, float z1, float x2, float y2, float z2);

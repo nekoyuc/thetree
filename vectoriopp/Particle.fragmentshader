@@ -3,14 +3,42 @@
 // Interpolated values from the vertex shaders
 in vec2 UV;
 in vec4 particlecolor;
+in vec3 worldPosition;
 
 // Ouput data
 out vec4 color;
 
 uniform sampler2D myTextureSampler;
+const float PI = 3.1415926535897932384626433832795;
+const vec3 lightPosition = vec3(0,0,2);
+uniform float time;
 
 void main(){
 	// Output color = color of the texture at the specified UV
-	color = texture( myTextureSampler, UV ) * particlecolor; 
+	vec2 intensity = UV - vec2(0.5,0.5);
+	float intensityf = 2*sqrt(intensity.x*intensity.x + intensity.y*intensity.y);
+	//color = texture( myTextureSampler, UV ) * particlecolor * (1-intensityf); 
+	color = particlecolor;
+	intensityf *= 2;
+	color *= max(abs(sin(pow(intensityf,intensityf))/pow(2,(pow(intensityf,intensityf)-PI/2)/PI)), 0.1);
+	//color *= (1-intensityf);
+	if (intensityf >= 2.0) {
+	    color.a = 0.0;
+		return;
+	}
 
+	vec3 sphereCenter = vec3(0.5, 0.5, 0.5);
+    vec3 spherePos = vec3(UV, sqrt(max(0.0, 1.0 - dot(UV - sphereCenter.xy, UV - sphereCenter.xy))));
+    vec3 normal = normalize(spherePos - sphereCenter)*2.0;
+
+    // Compute light direction
+    vec3 lightDir = normalize(lightPosition - worldPosition);
+
+    // Compute the lighting
+    float diff = max(dot(normal, lightDir), 0.0);
+
+    // Gamma correct
+    diff = clamp(pow(diff, 2.2), 0.3, 1.0);
+	color.rgb *= diff*clamp((time+0.8),0.8,1.3);
+	
 }

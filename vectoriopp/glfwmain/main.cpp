@@ -58,7 +58,7 @@ int main()
     return -1;
   }
 
-  glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwWindowHint(GLFW_SAMPLES, 16);
   glfwWindowHint(GLFW_RESIZABLE,GL_FALSE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -73,6 +73,7 @@ int main()
     return -1;
   }
   glfwMakeContextCurrent(window);
+  glEnable(GL_MULTISAMPLE);
 
   // Initialize GLEW
   glewExperimental = true; // Needed for core profile
@@ -120,7 +121,6 @@ int main()
     double delta = currentTime - lastTime; 
     lastTime = currentTime;
 
-  printf("Delta %f \n", delta);
     mouseHandler.update(window, vectorio.getDrawPlaneDistance());
     vectorio.update(delta, getProjectionMatrix(), getViewMatrix());
     vectorio.render(getProjectionMatrix(), getViewMatrix());

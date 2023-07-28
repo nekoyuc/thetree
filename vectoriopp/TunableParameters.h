@@ -16,6 +16,7 @@
 
 // particle trails
 #define PARTICLE_HISTORY_LENGTH 350
+#define DEFAULT_PARTICLE_HISTORY_LENGTH PARTICLE_HISTORY_LENGTH
 
 // particle movement
 #define MAINTAIN_SCALE 0.45f // default is 0.5

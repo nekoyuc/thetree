@@ -70,6 +70,7 @@ protected:
     GLuint mCameraRightWorldspaceId;
     GLuint mCameraUpWorldspaceId;
     GLuint mViewProjMatrixId;
+    GLuint mTimeId;
     GLuint mTextureId;
     GLuint mTexture;
     GLfloat* mParticlePositionSizeData;
@@ -82,6 +83,8 @@ protected:
     Particle* mParticles;
     int mLastUsedParticle = 0;
     int mParticlesCount;
+
+    int64_t mTime = 0;
 
     LineRenderer* mTrailRenderer;
     int mTrailCount;

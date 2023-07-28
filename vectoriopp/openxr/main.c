@@ -1403,7 +1403,7 @@ main(int argc, char** argv)
 			// grabValue[i].isActive, grabValue[i].currentState,
 			// grabValue[i].changedSinceLastSync);
 
-			if (grab_value[i].isActive && grab_value[i].currentState > 0.75) {
+			/*			if (grab_value[i].isActive && grab_value[i].currentState > 0.75) {
 				XrHapticVibration vibration = {.type = XR_TYPE_HAPTIC_VIBRATION,
 				                               .next = NULL,
 				                               .amplitude = 0.5,
@@ -1418,7 +1418,7 @@ main(int argc, char** argv)
 				                               (const XrHapticBaseHeader*)&vibration);
 				xr_check(instance, result, "failed to apply haptic feedback!");
 				// printf("Sent haptic output to hand %d\n", i);
-			}
+				}*/
 		};
 
 		bool left_clicked = grab_value[0].isActive && grab_value[0].currentState > 0.75;
