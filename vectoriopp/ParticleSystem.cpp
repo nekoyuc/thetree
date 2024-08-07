@@ -35,13 +35,17 @@ static const GLfloat g_vertex_buffer_data[] = {
 };
 
 
-ParticleSystem::ParticleSystem(DensityGrid* densityGrid, int maxParticles) : mMaxParticles(maxParticles) {
+ParticleSystem::ParticleSystem(DensityGrid* densityGrid, int maxParticles, int historyLen) : mMaxParticles(maxParticles) {
+	historyLen = PARTICLE_HISTORY_LENGTH;
 	mDensityGrid = densityGrid;
 	mTrailRenderer = new LineRenderer(mMaxParticles * PARTICLE_HISTORY_LENGTH * 6);
 	mTrailRenderer->mColor = glm::vec4(0.2f, 0.0f, 0.8f, 0.5f);
 	mParticlePositionSizeData = (GLfloat*)malloc(sizeof(GLfloat) * (mMaxParticles * 4));
 	mParticleColorData = (GLubyte*)malloc(sizeof(GLubyte) * (mMaxParticles * 4));
-	mParticles = (Particle*)malloc(sizeof(Particle) * mMaxParticles);
+	mHistoryLength = PARTICLE_HISTORY_LENGTH;// historyLen;
+	mParticles = (Particle*)malloc(getParticleSize() * mMaxParticles);
+	printf("Particle size %d \n", getParticleSize());
+	printf("Allocated %d bytes \n", getParticleSize() * mMaxParticles);
 	//mParticles = (Particle*) new Particle[mMaxParticles];
 	init();
 }
@@ -61,13 +65,13 @@ ParticleSystem::~ParticleSystem() {
 
 int ParticleSystem::findUnusedParticle(){
   for(int i=mLastUsedParticle; i<mMaxParticles; i++){
-    if (mParticles[i].life < 0){
+    if (getParticle(i).life < 0){
       mLastUsedParticle = i;
       return i;
     }
   }
   for(int i=0; i<mLastUsedParticle; i++){
-    if (mParticles[i].life < 0){
+    if (getParticle(i).life < 0){
       mLastUsedParticle = i;
       return i;
     }
@@ -76,7 +80,7 @@ int ParticleSystem::findUnusedParticle(){
 }
 
 void ParticleSystem::sortParticles(){
-	std::sort(&mParticles[0], &mParticles[mMaxParticles]);
+	//std::sort(&mParticles[0], &mParticles[mMaxParticles]);
 }
 
 void ParticleSystem::init() {
@@ -97,8 +101,8 @@ void ParticleSystem::init() {
   //static GLfloat* mParticlePositionSizeData = new GLfloat[mMaxParticles * 4];
   //static GLubyte* mParticleColorData = new GLubyte[mMaxParticles * 4];
   for(int i=0; i<mMaxParticles; i++){
-    mParticles[i].life = -1.0f;
-    mParticles[i].cameraDistance = -1.0f;
+    getParticle(i).life = -1.0f;
+    getParticle(i).cameraDistance = -1.0f;
   }
 
   mTexture = loadDDS("particle.DDS");
@@ -155,8 +159,8 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
   if (addParticle == true) {
 	  for (int i = 0; i < newparticles; i++) {
 		  int particleIndex = findUnusedParticle();
-		  mParticles[particleIndex].life = 8.0f; // This particle will live 8 seconds.
-		  mParticles[particleIndex].pos = newPos;
+		  getParticle(particleIndex).life = 8.0f; // This particle will live 8 seconds.
+		  getParticle(particleIndex).pos = newPos;
 		  glm::vec3 maindir = glm::vec3(0.0f, 0.5f, 0.0f);
 		  // Very bad way to generate a random direction; 
 		  // See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
@@ -166,14 +170,14 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 			  (rand() % 2000 - 1000.0f) / 1000.0f,
 			  (rand() % 2000 - 1000.0f) / 1000.0f
 		  );
-		  mParticles[particleIndex].speed = (maindir + randomdir * INIT_SPREAD) / 2.0f;
+		  getParticle(particleIndex).speed = (maindir + randomdir * INIT_SPREAD) / 2.0f;
 		  // Very bad way to generate a random color
-		  mParticles[particleIndex].r = rand() % 256;
-		  mParticles[particleIndex].g = rand() % 256;
-		  mParticles[particleIndex].b = rand() % 256;
-		  //  mParticles[particleIndex].a = (rand() % 256) / 2;
-		  mParticles[particleIndex].a = 255;
-		  mParticles[particleIndex].size = (rand() % 1000) / 30000.0f + 0.001f;
+		  getParticle(particleIndex).r = rand() % 256;
+		  getParticle(particleIndex).g = rand() % 256;
+		  getParticle(particleIndex).b = rand() % 256;
+		  //  getParticle(particleIndex).a = (rand() % 256) / 2;
+		  getParticle(particleIndex).a = 255;
+		  getParticle(particleIndex).size = (rand() % 1000) / 30000.0f + 0.001f;
 	  }
   }
 
@@ -182,7 +186,7 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
   mTrailCount = 0;
   mTrailRenderer->mNumVertices = 0;
   for (int i = 0; i < mMaxParticles; i++) {
-	  Particle& p = mParticles[i]; // shortcut
+	  Particle& p = getParticle(i); // shortcut
 	  if (p.pos.y < -6.0f || p.pos.x > 6 || p.pos.z > 6 || p.pos.x < -6 || p.pos.z < -6) {
 			printf("Killing particle \n");
 		  p.life = 0.0f;

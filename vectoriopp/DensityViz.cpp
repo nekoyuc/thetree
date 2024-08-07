@@ -11,7 +11,7 @@ void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries, 
 	printf("Starting 1\n");
 	for (const auto& entry : entries) {
         int particleIndex = findUnusedParticle();
-        mParticles[particleIndex].life = 0.1f; // has to be non zero        
+        mParticles[particleIndex].life = 100.0f; // has to be non zero        
 		mParticles[particleIndex].pos = glm::vec3(entry.x, entry.y, entry.z);
  
         // Very bad way to generate a random color

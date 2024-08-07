@@ -86,6 +86,7 @@ void Vectorio::render(const glm::mat4& projection, const glm::mat4& view) {
     glDisable(GL_DEPTH_TEST);
 
     if (mHasDensityVisualization) {
+        printf("Rendering density visualization lol\n");
         mDensityVisualizer->render(projection, view);
     }
 

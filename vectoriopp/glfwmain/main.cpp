@@ -128,6 +128,7 @@ int main()
     if (waitingOnFuture) {
         auto available = futureProfiling.wait_for(std::chrono::nanoseconds(1));
         if (available == std::future_status::ready) {
+            printf("Visualizing field\n");
             vectorio.visualizeField(futureProfiling.get(), getViewMatrix());
             //densityGrid->doneProfiling();
             waitingOnFuture = false;

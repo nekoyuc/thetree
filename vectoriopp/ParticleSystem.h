@@ -9,7 +9,7 @@
 
 class ParticleSystem {
 public:
-    ParticleSystem(DensityGrid* df = nullptr, int maxParticles = 12000);
+    ParticleSystem(DensityGrid* df = nullptr, int maxParticles = 12000, int historyLen = PARTICLE_HISTORY_LENGTH);
     ~ParticleSystem();
 
     struct Particle { // inner class
@@ -18,9 +18,9 @@ public:
       float size, angle, weight;
       float life;
       float cameraDistance;
-
-      glm::vec3 history[PARTICLE_HISTORY_LENGTH];
       int currentHistoryPosition = 0;
+
+      glm::vec3 history[1]; //[PARTICLE_HISTORY_LENGTH];
 
       void recordHistory(const glm::vec3& position);
 
@@ -60,6 +60,11 @@ public:
     bool eraseOn = false;
     glm::vec3 eraseRay = glm::vec3(0.0f, 0.0f, -1.0f);
 
+    size_t getParticleSize() { return sizeof(Particle) + sizeof(glm::vec3)*(mHistoryLength); }
+    Particle& getParticle(int index) { 
+        return *(Particle*)(reinterpret_cast<void*>(mParticles)+(getParticleSize()*index)); 
+    }
+
 protected:
     const int mMaxParticles;
 
@@ -90,6 +95,8 @@ protected:
     int mTrailCount;
 
     float mCrossProductLength;
+
+    int mHistoryLength;
 
     int findUnusedParticle();
     void sortParticles();

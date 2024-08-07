@@ -78,7 +78,7 @@ randomness_toggle = False
 image_toggle = False
 
 #image = Image.open(sys.argv[1]).resize((SCREEN_WIDTH, SCREEN_HEIGHT))
-image = Image.open("d:/work/the tree/scripts/vectorio/test_image.jpg").resize((SCREEN_WIDTH, SCREEN_HEIGHT))
+image = Image.open("test_image.jpg").resize((SCREEN_WIDTH, SCREEN_HEIGHT))
 image = np.array(image)
 
 ### LOGIC
