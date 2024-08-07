@@ -6,26 +6,27 @@
 
 void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries, const glm::mat4& viewMatrix) {
 	for (int i = 0; i < mMaxParticles; i++) {
-		mParticles[i].life = -1.0f;
+		getParticle(i).life = -1.0f;
 	}
-	printf("Starting 1\n");
+
 	for (const auto& entry : entries) {
         int particleIndex = findUnusedParticle();
-        mParticles[particleIndex].life = 100.0f; // has to be non zero        
-		mParticles[particleIndex].pos = glm::vec3(entry.x, entry.y, entry.z);
- 
-        // Very bad way to generate a random color
-        mParticles[particleIndex].r = (unsigned char)20 + entry.x * 100;
-		mParticles[particleIndex].g = (unsigned char)30 + entry.y * 100;
-        mParticles[particleIndex].b = (unsigned char)50 + entry.z * 100;
-		mParticles[particleIndex].a = (unsigned char)180;
+        getParticle(particleIndex).life = 100.0f; // has to be non zero        
+		Particle& particle = getParticle(particleIndex);
+		particle.pos = glm::vec3(entry.x, entry.y, entry.z);
+	 
+		// Very bad way to generate a random color
+		particle.r = (unsigned char)20 + entry.x * 100;
+		particle.g = (unsigned char)30 + entry.y * 100;
+		particle.b = (unsigned char)50 + entry.z * 100;
+		particle.a = (unsigned char)180;
 
-		mParticles[particleIndex].size = 0.01;
+		particle.size = 0.01;
 	}
-	printf("Starting 2\n");
+
 	mParticlesCount = 0;
 	for (int i = 0; i < mMaxParticles; i++) {
-		Particle& p = mParticles[i]; // shortcut
+		Particle& p = getParticle(i); // shortcut
 		if (p.life > 0.0f) {
 			// Get camera position from viewMatrix
 			glm::vec3 cameraPosition = glm::vec3(glm::inverse(viewMatrix)[3]);
