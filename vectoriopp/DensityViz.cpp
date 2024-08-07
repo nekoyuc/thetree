@@ -16,9 +16,9 @@ void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries, 
 		particle.pos = glm::vec3(entry.x, entry.y, entry.z);
 	 
 		// Very bad way to generate a random color
-		particle.r = (unsigned char)20 + entry.x * 100;
-		particle.g = (unsigned char)30 + entry.y * 100;
-		particle.b = (unsigned char)50 + entry.z * 100;
+		particle.r = (unsigned char)20 + entry.x*entry.x * 100;
+		particle.g = (unsigned char)30 + entry.y*entry.y * 100;
+		particle.b = (unsigned char)50 + entry.z*entry.z * 100;
 		particle.a = (unsigned char)180;
 
 		particle.size = 0.01;
@@ -44,8 +44,8 @@ void DensityViz::visualizeField(const std::vector<DensityGrid::Entry>& entries, 
 			p.cameraDistance = -1.0f;
 		}
 	}
-	printf("Starting 3\n");
 	sortParticles();
+	mTimeEffectScale = 0.2f;
 
 	glBindBuffer(GL_ARRAY_BUFFER, mParticlesPositionBuffer);
 	glBufferData(GL_ARRAY_BUFFER, mMaxParticles * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.

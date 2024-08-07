@@ -12,6 +12,7 @@ uniform sampler2D myTextureSampler;
 const float PI = 3.1415926535897932384626433832795;
 const vec3 lightPosition = vec3(0,0,2);
 uniform float time;
+uniform float timeEffectScale;
 
 void main(){
 	// Output color = color of the texture at the specified UV
@@ -39,6 +40,6 @@ void main(){
 
     // Gamma correct
     diff = clamp(pow(diff, 2.2), 0.3, 1.0);
-	color.rgb *= diff*clamp((time+0.8),0.8,1.3);
+	color.rgb = (1.0-timeEffectScale)*color.rgb + timeEffectScale*(color.rgb * diff*clamp((time+0.8),0.8,1.3));
 	
 }

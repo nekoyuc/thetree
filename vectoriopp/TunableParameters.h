@@ -20,7 +20,7 @@
 
 // particle movement
 #define MAINTAIN_SCALE 0.45f // default is 0.5
-#define FIELD_SCALE 7.0f
+#define FIELD_SCALE 50.0f
 #define GRAVITY_SCALE 0.01f
 //#define MIN_SPEED 0.4f
 // XR

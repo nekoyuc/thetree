@@ -77,6 +77,7 @@ protected:
     GLuint mViewProjMatrixId;
     GLuint mTimeId;
     GLuint mTextureId;
+    GLuint mTimeEffectScaleId;
     GLuint mTexture;
     GLfloat* mParticlePositionSizeData;
     GLubyte* mParticleColorData;
@@ -88,6 +89,7 @@ protected:
     Particle* mParticles;
     int mLastUsedParticle = 0;
     int mParticlesCount;
+    float mTimeEffectScale = 1.0f;
 
     int64_t mTime = 0;
 

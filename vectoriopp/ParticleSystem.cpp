@@ -97,6 +97,7 @@ void ParticleSystem::init() {
 
   // fragment shader
   mTextureId  = glGetUniformLocation(mProgramId, "myTextureSampler");
+  mTimeEffectScaleId = glGetUniformLocation(mProgramId, "timeEffectScale");
 	
   //static GLfloat* mParticlePositionSizeData = new GLfloat[mMaxParticles * 4];
   //static GLubyte* mParticleColorData = new GLubyte[mMaxParticles * 4];
@@ -188,7 +189,6 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
   for (int i = 0; i < mMaxParticles; i++) {
 	  Particle& p = getParticle(i); // shortcut
 	  if (p.pos.y < -6.0f || p.pos.x > 6 || p.pos.z > 6 || p.pos.x < -6 || p.pos.z < -6) {
-			printf("Killing particle \n");
 		  p.life = 0.0f;
 	  }
 	  
@@ -314,11 +314,12 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 
 
   mTrailRenderer->uploadToGPU();
-  mTime++;
 
 }
 
 void ParticleSystem::render(const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix) {
+  mTime++;
+
   glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
 
   glEnable(GL_BLEND);
@@ -345,6 +346,7 @@ void ParticleSystem::render(const glm::mat4& ProjectionMatrix, const glm::mat4& 
 	  time = 1.0f - time;
   }
   glUniform1f(mTimeId, time);
+  glUniform1f(mTimeEffectScaleId, mTimeEffectScale);
   
   glUniformMatrix4fv(mViewProjMatrixId, 1, GL_FALSE, &ViewProjectionMatrix[0][0]);
   
