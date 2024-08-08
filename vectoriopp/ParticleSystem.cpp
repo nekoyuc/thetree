@@ -133,144 +133,143 @@ void ParticleSystem::Particle::recordHistory(const glm::vec3& position) {
 void ParticleSystem::update(double delta, Field* field, const glm::mat4& ProjectionMatrix, const glm::mat4& ViewMatrix) {
 	// Record start time with chrono
 	auto start = std::chrono::high_resolution_clock::now();
-  // TODO: Could remove argument
-  //delta = 0.08;
-  // We will need the camera's position in order to sort the particles
-  // w.r.t the camera's distance.
-  // There should be a F() function in common/controls.cpp, 
-  // but this works too.
-  glm::vec3 CameraPosition(glm::inverse(ViewMatrix)[3]);
+	// TODO: Could remove argument
+	//delta = 0.08;
+	// We will need the camera's position in order to sort the particles
+	// w.r.t the camera's distance.
+	// There should be a F() function in common/controls.cpp, 
+	// but this works too.
+	glm::vec3 CameraPosition(glm::inverse(ViewMatrix)[3]);
+	glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
+	
+	// Generate 10 new particule each millisecond,
+	// but limit this to 16 ms (60 fps), or if you have 1 long frame (1sec),
+	// newparticles will be huge and the next frame even longer.
+	const int newParticles = 250;
+	int newparticles = (int)(delta*newParticles); 
+	if (newparticles > (int)(0.016f*newParticles))
+	newparticles = (int)(0.008f*newParticles); // maximum of new particles is 4 per millisecond
+	
+	delta /= 10.0;
+	
+	glm::vec3 cameraPosition = glm::vec3(glm::inverse(ViewMatrix)[3]);
 
-  glm::mat4 ViewProjectionMatrix = ProjectionMatrix * ViewMatrix;
+	// Create new particles
+	if (addParticle == true){
+		for (int i = 0; i < newparticles; i++){
+			int particleIndex = findUnusedParticle();
+			getParticle(particleIndex).life = 8.0f; // This particle will live 8 seconds. Outdated feature
+			getParticle(particleIndex).pos = newPos;
+			glm::vec3 maindir = glm::vec3(0.0f, 0.5f, 0.0f);
+			// Very bad way to generate a random direction;
+			// See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
+			// combined with some user-controlled parameters (main direction, spread, etc)
+			glm::vec3 randomdir = glm::vec3(
+				(rand() % 2000 - 1000.0f) / 1000.0f,
+				(rand() % 2000 - 1000.0f) / 1000.0f,
+				(rand() % 2000 - 1000.0f) / 1000.0f);
+			getParticle(particleIndex).speed = maindir + randomdir * INIT_SPREAD;
+			// Very bad way to generate a random color
+			getParticle(particleIndex).r = rand() % 256;
+			getParticle(particleIndex).g = rand() % 256;
+			getParticle(particleIndex).b = rand() % 256;
+			//  getParticle(particleIndex).a = (rand() % 256) / 2;
+			getParticle(particleIndex).a = 255;
+			getParticle(particleIndex).size = (rand() % 1000) / 30000.0f + 0.001f;
+		}
+	}
 
+	// Simulate all particles
+	mParticlesCount = 0;
+	mTrailCount = 0;
+	mTrailRenderer->mNumVertices = 0;
+	for (int i = 0; i < mMaxParticles; i++){
+		Particle &p = getParticle(i); // shortcut
+		if (p.pos.y < -6.0f || p.pos.x > 6 || p.pos.z > 6 || p.pos.x < -6 || p.pos.z < -6){
+			p.life = 0.0f;
+		}
 
-  // Generate 10 new particule each millisecond,
-  // but limit this to 16 ms (60 fps), or if you have 1 long frame (1sec),
-  // newparticles will be huge and the next frame even longer.
-  const int newParticles = 250;
-  int newparticles = (int)(delta*newParticles); 
-  if (newparticles > (int)(0.016f*newParticles))
-    newparticles = (int)(0.008f*newParticles); // maximum of new particles is 4 per millisecond
+		// Erase effect
+		if (eraseOn == true){
+			if (p.life <= 0.0f){
+				p.cameraDistance = -1.0f;
+				continue;
+			}
+		glm:
+			vec3 PoToCa = cameraPosition - p.pos;
+			mCrossProductLength = glm::length(glm::vec3(
+				eraseRay[1] * PoToCa[2] - eraseRay[2] * PoToCa[1],
+				eraseRay[2] * PoToCa[0] - eraseRay[0] * PoToCa[2],
+				eraseRay[0] * PoToCa[1] - eraseRay[1] * PoToCa[0]));
 
-  delta /= 10.0;
+			// destamp
+			if (mCrossProductLength < ERASE_TOLERANCE){
+				int trailLength = 0;
+				if (p.currentHistoryPosition >= PARTICLE_HISTORY_LENGTH){
+					trailLength = PARTICLE_HISTORY_LENGTH;
+				}
+				else{
+					trailLength = p.currentHistoryPosition;
+				}
+				for (int i = 0; i < trailLength; i++){
+					// if (mDensityGrid->mDontRecord == false) {
+					{
+						int x, y, z;
+						mDensityGrid->findGridLocation(p.history[i], x, y, z);
+						mDensityGrid->stamp(x, y, z, -1.0f);
+					}
+				}
+				p.life = 0.0f;
+			}
+		}
 
-  glm::vec3 cameraPosition = glm::vec3(glm::inverse(ViewMatrix)[3]);
+		// Update particle
+		if (p.life > 0.0f){
+			// particles only keep moving above certain speed
+			if (glm::length(p.speed) > MIN_SPEED && p.currentHistoryPosition <= 30){
+				// #################################
+				// ####### Main physics loop #######
+				p.speed = MAINTAIN_SCALE * p.speed
+						+ GRAVITY_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
+						+ FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
 
-  // Create new particles
-  if (addParticle == true) {
-	  for (int i = 0; i < newparticles; i++) {
-		  int particleIndex = findUnusedParticle();
-		  getParticle(particleIndex).life = 8.0f; // This particle will live 8 seconds.
-		  getParticle(particleIndex).pos = newPos;
-		  glm::vec3 maindir = glm::vec3(0.0f, 0.5f, 0.0f);
-		  // Very bad way to generate a random direction; 
-		  // See for instance http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution instead,
-		  // combined with some user-controlled parameters (main direction, spread, etc)
-		  glm::vec3 randomdir = glm::vec3(
-			  (rand() % 2000 - 1000.0f) / 1000.0f,
-			  (rand() % 2000 - 1000.0f) / 1000.0f,
-			  (rand() % 2000 - 1000.0f) / 1000.0f
-		  );
-		  getParticle(particleIndex).speed = (maindir + randomdir * INIT_SPREAD) / 2.0f;
-		  // Very bad way to generate a random color
-		  getParticle(particleIndex).r = rand() % 256;
-		  getParticle(particleIndex).g = rand() % 256;
-		  getParticle(particleIndex).b = rand() % 256;
-		  //  getParticle(particleIndex).a = (rand() % 256) / 2;
-		  getParticle(particleIndex).a = 255;
-		  getParticle(particleIndex).size = (rand() % 1000) / 30000.0f + 0.001f;
-	  }
-  }
+				p.pos += // ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
+					p.speed * (float)delta + glm::vec3((float)sin(p.pos[0] * 10.0f) * 0.01f,
+													   (float)sin(p.pos[0] * 10.0f) * (float)(cos(p.pos[2] * 10.0f)) * 0.01f,
+													   (float)(cos(p.pos[2] * 10.0f)) * 0.01f);
+			    // ####### Main physics loop #######
+				// #################################
 
-  // Simulate all particles
-  mParticlesCount = 0;
-  mTrailCount = 0;
-  mTrailRenderer->mNumVertices = 0;
-  for (int i = 0; i < mMaxParticles; i++) {
-	  Particle& p = getParticle(i); // shortcut
-	  if (p.pos.y < -6.0f || p.pos.x > 6 || p.pos.z > 6 || p.pos.x < -6 || p.pos.z < -6) {
-		  p.life = 0.0f;
-	  }
-	  
-	  if (eraseOn == true) {
-		  if (p.life <= 0.0f) {
-			  p.cameraDistance = -1.0f;
-			  continue;
-		  }
-	      glm:vec3 PoToCa = cameraPosition - p.pos;  
-		  mCrossProductLength = glm::length(glm::vec3(
-			  eraseRay[1] * PoToCa[2] - eraseRay[2] * PoToCa[1],
-			  eraseRay[2] * PoToCa[0] - eraseRay[0] * PoToCa[2],
-			  eraseRay[0] * PoToCa[1] - eraseRay[1] * PoToCa[0]
-		  ));	  
+				// stamp
+				if (mDensityGrid != nullptr){
+					// mDensityGrid->recordParticleAt(p.pos);
+					// if (mDensityGrid->mDontRecord == false) {
+					{
+						int x, y, z;
+						mDensityGrid->findGridLocation(p.pos, x, y, z);
+						mDensityGrid->stamp(x, y, z, 1.0f);
+					}
+				}
+				p.recordHistory(p.pos);
+			}
 
-		  // destamp
-		  if (mCrossProductLength < ERASE_TOLERANCE) {
-			  int trailLength = 0;
-			  if (p.currentHistoryPosition >= PARTICLE_HISTORY_LENGTH) {
-				  trailLength = PARTICLE_HISTORY_LENGTH;
-			  }
-			  else {
-				  trailLength = p.currentHistoryPosition;
-			  }
-			  for (int i = 0; i < trailLength; i++){
-				  //if (mDensityGrid->mDontRecord == false) {
-				  {
-					  int x, y, z;
-					  mDensityGrid->findGridLocation(p.history[i], x, y, z);
-					  mDensityGrid->stamp(x, y, z, -1.0f);
-				  }
-			  }
-			  p.life = 0.0f;
-		  }
-	  }
+			mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
+			mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
+			mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
+			mParticlePositionSizeData[4 * mParticlesCount + 3] = p.size;
+			mParticleColorData[4 * mParticlesCount + 0] = p.r;
+			mParticleColorData[4 * mParticlesCount + 1] = p.g;
+			mParticleColorData[4 * mParticlesCount + 2] = p.b;
+			mParticleColorData[4 * mParticlesCount + 3] = p.a;
 
-	  if (p.life > 0.0f) {
+			p.cameraDistance = glm::length(p.pos - cameraPosition);
+			// Fill the GPU buffer
 
-		  // particles only keep moving above certain speed
-		  if (glm::length(p.speed) > MIN_SPEED && p.currentHistoryPosition <= 30) {
-			  p.speed = MAINTAIN_SCALE * p.speed
-				  + GRAVITY_SCALE * glm::vec3(0.0f, -9.81f, 0.0f)
-				  + FIELD_SCALE * (field->sampleField(p.pos[0], p.pos[1], p.pos[2]));
-
-			  p.pos += //ACCELERATION_SCALE * p.speed * (float)delta // Acceleration
-				  p.speed * (float)delta
-				  + glm::vec3((float)sin(p.pos[0]*10.0f) * 0.01f,
-					  (float)sin(p.pos[0] * 10.0f) * (float)(cos(p.pos[2] * 10.0f)) * 0.01f,
-					  (float)(cos(p.pos[2] * 10.0f)) * 0.01f)
-				  ;
-
-			  // stamp
-			  if (mDensityGrid != nullptr) {
-				  //mDensityGrid->recordParticleAt(p.pos);
-				  //if (mDensityGrid->mDontRecord == false) {
-				  {
-					  int x, y, z;
-					  mDensityGrid->findGridLocation(p.pos, x, y, z);
-					  mDensityGrid->stamp(x, y, z, 1.0f);
-				  }
-			  }
-			  p.recordHistory(p.pos);
-		  }
-
-		  mParticlePositionSizeData[4 * mParticlesCount + 0] = p.pos.x;
-		  mParticlePositionSizeData[4 * mParticlesCount + 1] = p.pos.y;
-		  mParticlePositionSizeData[4 * mParticlesCount + 2] = p.pos.z;
-	      mParticlePositionSizeData[4 * mParticlesCount + 3] = p.size;
-		  mParticleColorData[4 * mParticlesCount + 0] = p.r;
-		  mParticleColorData[4 * mParticlesCount + 1] = p.g;
-		  mParticleColorData[4 * mParticlesCount + 2] = p.b;
-		  mParticleColorData[4 * mParticlesCount + 3] = p.a;		  
-
-		  p.cameraDistance = glm::length(p.pos - cameraPosition);
-			  // Fill the GPU buffer
-			  
-
-			  // Update trails. Trail count is total number of trail vertices, count is number for
-			  // current particle
-		  if (showTrail == true && p.currentHistoryPosition > 1) {
-			  int count = 0;
-			  p.iterateHistory([&](const glm::vec3& pos) {
+			// Update trails. Trail count is total number of trail vertices, count is number for
+			// current particle
+			if (showTrail == true && p.currentHistoryPosition > 1){
+				int count = 0;
+				p.iterateHistory([&](const glm::vec3 &pos){
 			  if (count < 2) {
 				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 0] = pos.x;
 				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 1] = pos.y;
@@ -278,7 +277,8 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 				  mTrailRenderer->mNumVertices += 3;
 				  mTrailCount++;
 				  count++;
-			  }else {
+			  }
+			  else {
 				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 5] = pos.z;
 				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 4] = pos.y;
 				  mTrailRenderer->mVertexBufferData[3 * mTrailCount + 3] = pos.x;
@@ -288,15 +288,15 @@ void ParticleSystem::update(double delta, Field* field, const glm::mat4& Project
 				  mTrailRenderer->mNumVertices += 6;
 				  mTrailCount += 2;
 			  }
-				  });
-		  }
-		  mParticlesCount++;
-	  }
-	  else {
-		  // Particles that just died will be put at the end of the buffer in SortParticles();
-		  p.cameraDistance = -1.0f;
-	  }
-  }
+			  });
+			}
+			mParticlesCount++;
+		}
+		else{
+			// Particles that just died will be put at the end of the buffer in SortParticles();
+			p.cameraDistance = -1.0f;
+		}
+	}
   // Print time since start time with chrono
 
 

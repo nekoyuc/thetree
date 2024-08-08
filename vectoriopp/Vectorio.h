@@ -9,6 +9,12 @@
 #include <future>
 #include <vector>
 
+/*
+these are forward declarations. basically:
+"These classes exist, but you don't need to know their full details right now.
+Just trust me, you'll get the full definition later."
+*/
+
 class CameraFacingTriangles;
 class ColoredTriangles;
 class DensityGrid;
@@ -26,23 +32,23 @@ public:
     void render(const glm::mat4& projection, const glm::mat4& view);
 
     float getDrawPlaneDistance();
-    void toggleRenderDrawPlane() { mRenderDrawPlane = !mRenderDrawPlane; }
-    void toggleShowTrails();
-    void invertLineField();
-
     void moveDrawPlane(const glm::vec3& diff);
-    void changeProfileThreshold(float diff);
-    std::future<std::vector<DensityGrid::Entry>> profile();
-    void visualizeField(const std::vector<DensityGrid::Entry>& entries, const glm::mat4& viewMatrix);
-    void clearFieldVisualizer();
+    void toggleRenderDrawPlane() { mRenderDrawPlane = !mRenderDrawPlane; }
 
     void addLine(float x1, float y1, float z1, float x2, float y2, float z2);
     void recordLine(float x1, float y1, float z1, float x2, float y2, float z2);
+    void toggleShowTrails();
+
     void addParticle(const glm::vec3& pos);
     void stopAddParticle();
-
+    
+    std::future<std::vector<DensityGrid::Entry>> profile();
+    void visualizeField(const std::vector<DensityGrid::Entry>& entries, const glm::mat4& viewMatrix);
+    void changeProfileThreshold(float diff);
+    void invertLineField();
+    void clearFieldVisualizer();
+    
     void setEraseRay(const glm::vec3& ray);
-
     void setEraseOn(bool eraseOn);
 
 private:

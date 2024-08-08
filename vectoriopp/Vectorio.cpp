@@ -119,8 +119,8 @@ void Vectorio::recordLine(float x1, float y1, float z1, float x2, float y2, floa
     mLineField->recordLine(x1, y1, z1, x2, y2, z2);
 }
 
-void Vectorio::setEraseRay(const glm::vec3& ray) {
-    mParticleSystem->eraseRay = ray;
+void Vectorio::toggleShowTrails() {
+    mParticleSystem->showTrail = !mParticleSystem->showTrail;
 }
 
 void Vectorio::addParticle(const glm::vec3& ray) {
@@ -130,15 +130,6 @@ void Vectorio::addParticle(const glm::vec3& ray) {
 
 void Vectorio::stopAddParticle() {
     mParticleSystem->addParticle = false;
-}
-
-void Vectorio::toggleShowTrails() {
-    mParticleSystem->showTrail = !mParticleSystem->showTrail;
-}
-
-void Vectorio::changeProfileThreshold(float diff) {
-    mDensityGrid->threshold += diff;
-    printf("threshold is %f\n", mDensityGrid->threshold);
 }
 
 std::future<std::vector<DensityGrid::Entry>> Vectorio::profile() {
@@ -151,11 +142,20 @@ void Vectorio::visualizeField(const std::vector<DensityGrid::Entry>& profile, co
     mHasDensityVisualization = true;
 }
 
-void Vectorio::setEraseOn(bool on) {
-    mParticleSystem->eraseOn = on;
+void Vectorio::changeProfileThreshold(float diff) {
+    mDensityGrid->threshold += diff;
+    printf("threshold is %f\n", mDensityGrid->threshold);
 }
 
 void Vectorio::invertLineField() {
     mLineField->rotation_direction *= -1.0f;
     printf("\n\ncurrent rotation direction is %f", mLineField->rotation_direction);    
+}
+
+void Vectorio::setEraseRay(const glm::vec3& ray) {
+    mParticleSystem->eraseRay = ray;
+}
+
+void Vectorio::setEraseOn(bool on) {
+    mParticleSystem->eraseOn = on;
 }

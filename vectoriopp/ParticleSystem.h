@@ -15,7 +15,7 @@ public:
     struct Particle { // inner class
       glm::vec3 pos, speed;
       unsigned char r,g,b,a;
-      float size, angle, weight;
+      float size, weight;
       float life;
       float cameraDistance;
       int currentHistoryPosition = 0;
